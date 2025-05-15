@@ -7,9 +7,13 @@
         <div class="my-4 grid gap-4 md:my-6 md:grid-cols-2 md:gap-12">
             <div class="space-y-4">
                 <div class="flex items-center space-x-4">
-                    <img class="h-16 w-16 rounded-lg"
-                         src="{{ profile.avatar.url }}"
-                         alt="{{ user.username }}"/>
+                    {% if profile.avatar %}
+                        <img class="h-16 w-16 rounded-lg" src="{{ profile.avatar.url }}" alt="{{ user.username }}"/>
+                    {% else %}
+                        <img class="h-16 w-16 rounded-lg" src="{% static 'img/profil.jpg' %}"
+                             alt="Domyślny avatar"/>
+                    {% endif %}
+
                     <div>
                         <h3 class="ml-4 text-2xl font-bold tracking-tight text-gray-900">
                             {% if user.first_name or user.last_name %}
