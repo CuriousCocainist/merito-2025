@@ -61,3 +61,15 @@
     <!-- Sidebar -->
     {% include "common/_sidebar.html" %}
 {% endblock %}
+
+<h2>{{ article.title }}</h2>
+<p>{{ article.content }}</p>
+
+{% if article.file %}
+    <a href="{% url 'download_article_file' article.id %}" class="btn btn-primary">📄 Pobierz plik</a>
+{% endif %}
+
+</a>
+{% else %}
+    <p>Brak załączonego pliku.</p>
+{% endif %}
