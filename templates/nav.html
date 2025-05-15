@@ -1,42 +1,37 @@
 <div class="bg-blue-900">
-  <div class="mx-auto flex h-10 max-w-7xl items-center justify-end px-4 sm:px-6 lg:px-8">
-    {% if user.is_authenticated %}
-      <div class="flex items-center space-x-4 text-sm font-medium text-white">
-        <span>Witaj, {{ user.first_name|default:user.username }} ({{ user.email }})</span>
-        <a href="{% url 'logout' %}" class="flex items-center space-x-1 hover:text-gray-100">
-          <button type="submit" class="hover:text-gray-100">Wyloguj się</button>
-        </a>
-      </div>
-    {% else %}
-      <div class="flex items-center space-x-4 text-sm font-medium text-white">
-        <a href="{% url 'login' %}" class="hover:text-gray-100">Zaloguj się</a>
-        <span class="h-4 w-px bg-white/50"></span>
-        <a href="{% url 'register' %}" class="flex items-center space-x-1 hover:text-gray-100">
-          <span>Nie masz jeszcze konta?</span>
-          <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-               stroke="currentColor" stroke-width="2">
-            <path d="M5 12h14"></path>
-            <path d="m12 5 7 7-7 7"></path>
-          </svg>
-          <span>Zarejestruj się</span>
-        </a>
-      </div>
-    {% endif %}
-  </div>
+    <div class="mx-auto flex h-10 max-w-7xl items-center justify-end px-4 sm:px-6 lg:px-8">
+        {% if user.is_authenticated %}
+            <div class="flex items-center space-x-4 text-sm font-medium text-white">
+                <span>Witaj, {{ user.first_name|default:user.username }} ({{ user.email }})</span>
+                <a href="{% url 'logout' %}" class="flex items-center space-x-1 hover:text-gray-100">
+                    <button type="submit" class="hover:text-gray-100">Wyloguj się</button>
+                </a>
+            </div>
+        {% else %}
+            <div class="flex items-center space-x-4 text-sm font-medium text-white">
+                <a href="{% url 'login' %}" class="hover:text-gray-100">Zaloguj się</a>
+                <span class="h-4 w-px bg-white/50"></span>
+                <a href="{% url 'register' %}" class="flex items-center space-x-1 hover:text-gray-100">
+                    <span>Nie masz jeszcze konta?</span>
+                    <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                    <span>Zarejestruj się</span>
+                </a>
+            </div>
+        {% endif %}
+    </div>
 </div>
-<!-- Pasek z nawigacją - główne menu -->
 <nav class="bg-blue-50 border-b border-blue-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-            <!-- Logo -->
-            <!-- Klikalne logo, które prowadzi na stronę główną -->
+        <div class="flex justify-between items-center h-16" id="main-nav">
             <div class="flex items-center space-x-2">
-                <!-- Używamy linku z reverse routingiem Django -->
                 <a href="{% url 'home' %}" class="text-2xl font-bold tracking-tight text-blue-600 hover:text-blue-800">
                     SCI<span class="text-gray-800">net</span>
                 </a>
             </div>
-            <!-- Nawigacja główna -->
             <div class="hidden md:flex space-x-8">
                 <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Strona główna</a>
                 <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Publikacje</a>
@@ -45,18 +40,22 @@
 
             </div>
 
-            <!-- Ikona profilu użytkownika -->
-            <div class="hidden md:flex items-center">
-                <a href="{% url 'profile_detail' %}" class="text-gray-700 hover:text-blue-600">
-                    <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                         aria-hidden="true" data-slot="icon">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"></path>
-                    </svg>
-                </a>
+            <div class="hidden md:flex items-center ml-auto" style="position: relative; top: 45px; right: -55px;">
+                <div class="group relative">
+                    <a href="#" class="text-gray-700 hover:text-blue-600 focus:outline-none">
+                        <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                             aria-hidden="true" data-slot="icon">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"></path>
+                        </svg>
+                    </a>
+                    <div class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out z-10">
+                        <a href="{% url 'profile_detail' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
+                        <a href="{% url 'change_password' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Zmień hasło</a>
+                    </div>
+                </div>
             </div>
 
-            <!-- "Hamburger" do menu mobilnego -->
             <div class="md:hidden">
                 <button id="menu-toggle" type="button" class="text-gray-500 hover:text-blue-600 focus:outline-none">
                     <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
@@ -74,7 +73,6 @@
             </script>
         </div>
     </div>
-    <!-- Menu mobilne widoczne tylko na małych ekranach poniżej md-->
     <div id="mobile-menu" class="md:hidden hidden flex flex-col px-4 pb-4 space-y-2">
         <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Strona główna</a>
         <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Publikacje</a>
@@ -82,3 +80,18 @@
         <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Polubione artykuły</a>
     </div>
 </nav>
+
+<style>
+.group {
+    position: relative;
+}
+
+.group-hover\:opacity-100 {
+    opacity: 0; /* Domyślnie ukryty */
+    transition: opacity 0.2s ease-in-out; /* Animacja pojawiania się */
+}
+
+.group:hover .group-hover\:opacity-100 {
+    opacity: 1; /* Pojawia się po najechaniu na element z klasą 'group' */
+}
+</style>

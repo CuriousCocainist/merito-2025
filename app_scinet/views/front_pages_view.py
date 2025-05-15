@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, get_user_model # Dodano import get_user_model
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
@@ -11,7 +11,14 @@ from app_scinet.forms.UserProfileFrom import UserProfileForm
 from app_scinet.models import Article, Interaction
 from app_scinet.forms import CustomUserRegistrationForm
 from app_scinet.models.UserProfileModel import UserProfile
+from django import forms #Import modułu formularzy Django
+from django.utils.crypto import get_random_string # Dodano import get_random_string
+from django.core.mail import send_mail # Dodano import send_mail
+from django.urls import reverse # Dodano import reverse
+from django.contrib.sites.shortcuts import get_current_site # Dodano import get_current_site
+from django.conf import settings # Dodano import settings
 
+User = get_user_model() # Pobranie modelu User
 
 def index_page(request):
     articles = Article.objects.all().order_by('-created_at')
@@ -304,3 +311,86 @@ def profile_view(request):
         'user': user,
         'profile': profile,
     })
+
+from django import forms #Import modułu formularzy Django
+
+class PasswordResetRequestForm(forms.Form): #Definiujemy nowy formularz do żądania resetu hasła
+    email = forms.EmailField(label='Adres e-mail') #Pole na adres e-mail
+    captcha = forms.CharField(label='Ile to jest 2 + 3?', max_length=5, min_length=1) # Pole na prosty test "nie jesteś robotem"
+
+def password_reset_request_view(request): #  Definiujemy widok obsługujący żądanie resetu hasła
+    if request.method == 'POST': #Sprawdzamy, czy formularz został wysłany metodą POST
+        form = PasswordResetRequestForm(request.POST) # Tworzymy instancję formularza z danymi POST
+        if form.is_valid(): # Sprawdzamy, czy formularz jest poprawny
+            email = form.cleaned_data['email'] # Pobieramy adres e-mail z oczyszczonych danych formularza
+            captcha_answer = form.cleaned_data['captcha'] # Pobieramy odpowiedź na pytanie z oczyszczonych danych
+
+            if captcha_answer == '5': # Sprawdzamy, czy odpowiedź na pytanie jest poprawna
+                try:
+                    user = User.objects.get(email=email) # Pobierz użytkownika po emailu
+                    token = get_random_string(length=32) # Generuj losowy token
+                    profile = UserProfile.objects.get(user=user) # Pobierz profil użytkownika
+                    profile.reset_token = token # Zapisz token w profilu
+                    profile.save() # Zapisz zmiany w profilu
+
+                    # Wygeneruj link do resetu hasła
+                    current_site = get_current_site(request) # Pobierz aktualną domenę
+                    reset_url = reverse('password_reset_confirm', kwargs={'token': token}) # Wygeneruj URL do widoku resetu
+                    abs_reset_url = f'http://{current_site.domain}{reset_url}' # Skonstruuj pełny URL
+
+                    # Wyślij email z linkiem do resetu
+                    subject = 'Resetowanie hasła w SCInet' # Temat emaila
+                    message = f'Kliknij w poniższy link, aby zresetować swoje hasło:\n\n{abs_reset_url}' # Treść emaila
+                    from_email = settings.DEFAULT_FROM_EMAIL  # Użyj adresu z settings.py
+                    recipient_list = [email] # Lista odbiorców
+                    send_mail(subject, message, from_email, recipient_list) # Wyślij email
+
+                    return render(request, 'password_reset_done.html', {'email': email}) # Renderuj stronę z potwierdzeniem
+                except User.DoesNotExist: # Obsługa przypadku, gdy użytkownik nie istnieje
+                    form.add_error('email', 'Nie znaleziono użytkownika z tym adresem e-mail.') # Dodaj błąd do formularza
+                except UserProfile.DoesNotExist: # Obsługa przypadku, gdy profil użytkownika nie istnieje
+                    form.add_error('email', 'Nie znaleziono profilu użytkownika.')
+            else:
+                form.add_error('captcha', 'Nieprawidłowa odpowiedź.') # Dodaj błąd do formularza
+    else: # Jeśli metoda żądania to GET (użytkownik dopiero wchodzi na stronę)
+        form = PasswordResetRequestForm() # Tworzymy pusty formularz
+
+    return render(request, 'password_reset_request.html', {'form': form}) # Renderujemy formularz resetowania hasła
+
+class SetNewPasswordForm(forms.Form): # Formularz do ustawiania nowego hasła
+    password = forms.CharField(label='Nowe hasło', widget=forms.PasswordInput) # Pole na nowe hasło
+    confirm_password = forms.CharField(label='Potwierdź nowe hasło', widget=forms.PasswordInput) # Pole do potwierdzenia nowego hasła
+
+    def clean(self): # Metoda do walidacji formularza
+        cleaned_data = super().clean() # Wywołaj metodę clean klasy nadrzędnej
+        password = cleaned_data.get('password') # Pobierz hasło
+        confirm_password = cleaned_data.get('confirm_password') # Pobierz potwierdzenie hasła
+
+        if password and confirm_password and password != confirm_password: # Sprawdź, czy hasła się zgadzają
+            raise forms.ValidationError("Hasła nie pasują do siebie.") # Jeśli nie, wyrzuć błąd
+
+        return cleaned_data # Zwróć oczyszczone dane
+
+def password_reset_confirm_view(request, token): # Widok do resetowania hasła po otrzymaniu tokenu
+    try:
+        profile = UserProfile.objects.get(reset_token=token) # Pobierz profil użytkownika po tokenie
+        user = profile.user # Pobierz użytkownika z profilu
+    except UserProfile.DoesNotExist: # Jeśli token jest nieprawidłowy
+        return render(request, 'password_reset_failed.html') # Pokaż stronę z błędem
+
+    if request.method == 'POST': # Jeśli formularz został wysłany
+        form = SetNewPasswordForm(request.POST) # Utwórz formularz
+        if form.is_valid(): # Jeśli formularz jest poprawny
+            password = form.cleaned_data['password'] # Pobierz nowe hasło
+            user.set_password(password) # Ustaw nowe hasło dla użytkownika
+            user.save() # Zapisz zmiany
+            profile.reset_token = None # Wyczyść token
+            profile.save() # Zapisz zmiany w profilu
+            return redirect('password_reset_complete') # Przekieruj na stronę z potwierdzeniem
+    else: # Jeśli metoda to GET
+        form = SetNewPasswordForm() # Utwórz pusty formularz
+
+    return render(request, 'password_reset_confirm.html', {'form': form, 'token': token}) # Pokaż formularz resetowania hasła
+
+def password_reset_complete_view(request):
+    return render(request, 'password_reset_complete.html')

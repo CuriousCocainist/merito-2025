@@ -30,8 +30,10 @@
       <div>
         <div class="flex justify-between items-center">
           <label for="password" class="block text-sm font-medium text-gray-900">Hasło</label>
-          <a href="#" class="text-sm font-semibold text-blue-600 hover:text-blue-500">Nie pamiętasz hasła?</a>
+          <a href="{% url 'password_reset_request' %}" class="text-sm font-semibold text-blue-600 hover:text-blue-500">Nie pamiętasz hasła?</a>
+          {# Dodano atrybut href z linkiem do strony resetowania hasła #}
         </div>
+
         <input type="password" name="password" id="password" required
                class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
