@@ -16,43 +16,42 @@ from app_scinet.models.UserProfileModel import UserProfile
 
 
 def index_page(request):
-    articles = Article.objects.all().order_by('-created_at')
+    # Pobieranie listy wszystkich artykułów posortowanych od najnowszego do najstarszego
+    articles_list = Article.objects.all().order_by('-created_at')
 
-    # Przechodzimy przez wszystkie artykuły pobrane wcześniej z bazy danych
-    for article in articles:
+    # Inicjalizacja mechanizmu paginacji z limitem 5 artykułów na stronę
+    paginator = Paginator(articles_list, 5)
 
-        # Tworzymy nowy atrybut `like_count` w obiekcie `article`
-        # Wartość to liczba interakcji typu 'like' związanych z tym artykułem
+    # Pobranie numeru bieżącej strony z parametrów GET w żądaniu
+    page_number = request.GET.get('page')
+
+    # Uzyskanie obiektu strony korzystając z paginatora
+    page_obj = paginator.get_page(page_number)
+
+    # Dla każdego artykułu na liście, liczy ile polubień i komentarzy ma artykuł
+    # oraz sprawdza, czy zalogowany użytkownik polubił dany artykuł
+    for article in page_obj:
+        # Zliczanie polubień dla każdego artykułu
         article.like_count = Interaction.objects.filter(article=article, type='like').count()
 
-        # Tworzymy nowy atrybut `comment_count` w obiekcie `article`
-        # Wartość to liczba interakcji typu 'comment' dla tego artykułu
+        # Zliczanie komentarzy dla każdego artykułu
         article.comment_count = Interaction.objects.filter(article=article, type='comment').count()
 
-        # Sprawdzamy, czy użytkownik jest zalogowany (czyli czy mamy dostęp do `request.user`)
+        # Sprawdzenie, czy zalogowany użytkownik polubił artykuł
         if request.user.is_authenticated:
-
-            # Tworzymy nowy atrybut `liked_by_user` w artykule
-            # Sprawdzamy, czy istnieje w bazie wpis interakcji typu 'like'
-            # przypisany do tego artykułu i tego użytkownika
             article.liked_by_user = Interaction.objects.filter(
-                article=article,
-                user=request.user,
-                type='like'
-            ).exists()
-
+                article=article, user=request.user, type='like').exists()
         else:
-            # Jeśli użytkownik nie jest zalogowany, ustawiamy `liked_by_user` na False
+            # Jeśli użytkownik nie jest zalogowany, domyślnie uznaje się, że nie polubił artykułu
             article.liked_by_user = False
 
-    # Tworzymy słownik `context`, który przekażemy do szablonu
-    # Zawiera on listę artykułów z dodatkowymi atrybutami (lajki, komentarze, polubienia użytkownika)
+    # Przygotowanie kontekstu do przekazania do szablonu
     context = {
-        'articles': articles
+        'page_obj': page_obj,
     }
 
+    # Renderowanie strony wykorzystując szablon 'main.html' i przygotowany kontekst
     return render(request, 'main.html', context)
-
 
 def article_page(request, article_id):
     article = get_object_or_404(Article, id=article_id)
