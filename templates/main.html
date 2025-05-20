@@ -35,6 +35,7 @@
                             <form action="{% url 'unfollow_article' article.id %}" method="post" class="inline">
                                 {% csrf_token %}
                                 <input type="hidden" name="requester" value="main">
+                                <input type="hidden" name="requester_url" value="{{ request.get_full_path }}">
                                 <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
                                     <span class="text-base">🔕</span>
                                     <span>Unfollow</span>
@@ -44,6 +45,7 @@
                             <form action="{% url 'follow_article' article.id %}" method="post" class="inline">
                                 {% csrf_token %}
                                 <input type="hidden" name="requester" value="main">
+                                <input type="hidden" name="requester_url" value="{{ request.get_full_path }}">
                                 <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
                                     <span class="text-base">🔔</span>
                                     <span>Follow</span>

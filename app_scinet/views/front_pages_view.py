@@ -180,11 +180,14 @@ def unlike_article(request, article_id):
 
 
 # Widok obsługujący aktywację śledzenia artykułu
-@login_required  # Tylko zalogowany użytkownik może śledzić artykuł
+# Tylko zalogowany użytkownik może śledzić artykuł
+@login_required
 def follow_article(request, article_id):
     requester = 'main'
+    requester_url = '/'
     if request.method == "POST":
         requester = request.POST.get("requester")
+        requester_url = request.POST.get('requester_url') or '/'
 
     # Pobierz artykuł, który użytkownik chce śledzić
     article = get_object_or_404(Article, pk=article_id)
@@ -203,9 +206,11 @@ def follow_article(request, article_id):
         )
 
     if requester == 'main':
-        # Po dodaniu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę główną
-        return redirect('home')
-    # Po dodaniu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę artykułu
+        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
+        # gdzie znajdował się nagłówek artykułu
+        return redirect(requester_url)
+
+        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
     return redirect('article', article_id=article_id)
 
 
@@ -213,8 +218,10 @@ def follow_article(request, article_id):
 @login_required
 def unfollow_article(request, article_id):
     requester = 'main'
+    requester_url = '/'
     if request.method == "POST":
         requester = request.POST.get("requester")
+        requester_url = request.POST.get('requester_url') or '/'
 
     article = get_object_or_404(Article, pk=article_id)
 
@@ -229,9 +236,11 @@ def unfollow_article(request, article_id):
         followed.delete()
 
     if requester == 'main':
-        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę główną
-        return redirect('home')
-    # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę artykułu
+        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
+        # gdzie znajdował się nagłówek artykułu
+        return redirect(requester_url)
+
+        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
     return redirect('article', article_id=article_id)
 
 
