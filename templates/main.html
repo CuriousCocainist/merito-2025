@@ -4,7 +4,7 @@
     <!-- Feed -->
     <section class="lg:col-span-2 space-y-6">
         <!-- Post -->
-        {% for article in articles %}
+        {% for article in page_obj %}
             <div class="bg-white p-4 rounded-md shadow">
                 <a href="{% url 'article' article.id %}">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -90,6 +90,18 @@
                 </div>
             </div>
         {% endfor %}
+        <!-- Paginacja -->
+        <div class="mt-8 flex justify-between items-center">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="text-sm text-blue-600 hover:underline">Poprzednia</a>
+            {% endif %}
+
+            <span class="text-sm text-gray-500">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="text-sm text-blue-600 hover:underline">Następna</a>
+            {% endif %}
+        </div>
     </section>
 
 {% endblock %}
@@ -98,6 +110,3 @@
                     {% include "common/_sidebar.html" %}
 
 {% endblock %}
-
-
-
