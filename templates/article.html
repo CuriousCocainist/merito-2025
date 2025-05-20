@@ -24,7 +24,25 @@
                 <div class="flex flex-wrap gap-2 mt-2">
                     <button class="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">Download</button>
                     <button class="text-sm text-gray-600">Save</button>
-                    <button class="text-sm text-gray-600">Follow</button>
+                    {% if article.followed_by_user %}
+                            <form action="{% url 'unfollow_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="requester" value="article">
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">🔕</span>
+                                    <span>Unfollow</span>
+                                </button>
+                            </form>
+                        {% else %}
+                            <form action="{% url 'follow_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="requester" value="article">
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">🔔</span>
+                                    <span>Follow</span>
+                                </button>
+                            </form>
+                        {% endif %}
                 </div>
             </div>
         </div>
@@ -70,6 +88,3 @@
 {% endif %}
 
 </a>
-{% else %}
-    <p>Brak załączonego pliku.</p>
-{% endif %}

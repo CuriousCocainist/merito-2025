@@ -9,11 +9,35 @@ from app_scinet.decorators import group_required
 from app_scinet.forms.ArticleForm import ArticleForm
 from app_scinet.forms.CommentForm import CommentForm
 from app_scinet.forms.UserProfileFrom import UserProfileForm
-from app_scinet.models import Article, Interaction
+from app_scinet.models import Article, Interaction, ArticleWatch
 from app_scinet.forms import CustomUserRegistrationForm
 from app_scinet.models.FriendshipModel import FriendshipModel
 from app_scinet.models.UserProfileModel import UserProfile
 
+
+def get_article_related_details(request, article):
+    if request.user.is_authenticated:
+        # Tworzymy nowy atrybut `liked_by_user` w artykule
+        # Sprawdzamy, czy istnieje w bazie wpis interakcji typu 'like'
+        # przypisany do tego artykułu i tego użytkownika
+        article.liked_by_user = Interaction.objects.filter(
+            article=article,
+            user=request.user,
+            type='like'
+        ).exists()
+
+        # Tworzymy nowy atrybut `followed_by_user` w artykule
+        # Sprawdzamy, czy istnieje w bazie wpis
+        # przypisany do tego artykułu i tego użytkownika
+        article.followed_by_user = ArticleWatch.objects.filter(
+            article=article,
+            user=request.user
+        ).exists()
+    else:
+        # Jeśli użytkownik nie jest zalogowany, ustawiamy `liked_by_user` na False
+        article.liked_by_user = False
+        # Jeśli użytkownik nie jest zalogowany, ustawiamy `followed_by_user` na False
+        article.followed_by_user = False
 
 def index_page(request):
     articles = Article.objects.all().order_by('-created_at')
@@ -29,21 +53,10 @@ def index_page(request):
         # Wartość to liczba interakcji typu 'comment' dla tego artykułu
         article.comment_count = Interaction.objects.filter(article=article, type='comment').count()
 
-        # Sprawdzamy, czy użytkownik jest zalogowany (czyli czy mamy dostęp do `request.user`)
-        if request.user.is_authenticated:
-
-            # Tworzymy nowy atrybut `liked_by_user` w artykule
-            # Sprawdzamy, czy istnieje w bazie wpis interakcji typu 'like'
-            # przypisany do tego artykułu i tego użytkownika
-            article.liked_by_user = Interaction.objects.filter(
-                article=article,
-                user=request.user,
-                type='like'
-            ).exists()
-
-        else:
-            # Jeśli użytkownik nie jest zalogowany, ustawiamy `liked_by_user` na False
-            article.liked_by_user = False
+        get_article_related_details(
+            request=request,
+            article=article
+        )
 
     # Tworzymy słownik `context`, który przekażemy do szablonu
     # Zawiera on listę artykułów z dodatkowymi atrybutami (lajki, komentarze, polubienia użytkownika)
@@ -56,11 +69,15 @@ def index_page(request):
 
 def article_page(request, article_id):
     article = get_object_or_404(Article, id=article_id)
+
+    get_article_related_details(
+        request=request,
+        article=article
+    )
+
     comments = Interaction.objects.filter(article=article, type='comment').order_by('created_at')
     comment_form = CommentForm()
-
     context = {'article': article, 'comment_form': comment_form, 'comments': comments}
-
 
     return render(request, 'article.html', context)
 
@@ -158,6 +175,61 @@ def unlike_article(request, article_id):
 
     return redirect('home')  # albo np. 'article' z powrotem
 
+
+# Widok obsługujący aktywację śledzenia artykułu
+@login_required  # Tylko zalogowany użytkownik może śledzić artykuł
+def follow_article(request, article_id):
+    requester = 'main'
+    if request.method == "POST":
+        requester = request.POST.get("requester")
+
+    # Pobierz artykuł, który użytkownik chce śledzić
+    article = get_object_or_404(Article, pk=article_id)
+
+    # Sprawdź, czy użytkownik już śledzi ten artykuł
+    already_followed = ArticleWatch.objects.filter(
+        user=request.user,
+        article=article
+    ).exists()
+
+    # Jeśli nie śledzi to utworzymy nowy wpis
+    if not already_followed:
+        ArticleWatch.objects.create(
+            user=request.user,
+            article=article
+        )
+
+    if requester == 'main':
+        # Po dodaniu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę główną
+        return redirect('home')
+    # Po dodaniu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę artykułu
+    return redirect('article', article_id=article_id)
+
+
+# Widok obsługujący dezaktywację śledzenia artykułu
+@login_required
+def unfollow_article(request, article_id):
+    requester = 'main'
+    if request.method == "POST":
+        requester = request.POST.get("requester")
+
+    article = get_object_or_404(Article, pk=article_id)
+
+    # Znajdź wystąpienie śledzenia dla tego użytkownika i artykułu
+    followed = ArticleWatch.objects.filter(
+        user=request.user,
+        article=article
+    ).first()
+
+    # Usuń wystąpienie jeśli istnieje wystąpienie śledzenia dla tego użytkownika i artykułu
+    if followed:
+        followed.delete()
+
+    if requester == 'main':
+        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę główną
+        return redirect('home')
+    # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę artykułu
+    return redirect('article', article_id=article_id)
 
 
 # Widok obsługujący komentowanie artykułu
