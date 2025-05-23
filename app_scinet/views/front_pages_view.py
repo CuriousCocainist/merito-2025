@@ -392,12 +392,12 @@ def profile_view(request):
     })
 
 @login_required
-def user_profile_view(request, user_id):
+def user_profile_view(request, user_id):  # Stworzenie funkcji user_profile_view, która przyjmuje user_id, znajduje użytkownika i renderuje stronę profilu
     user = get_object_or_404(User, id=user_id)
 
     # Zabezpieczenie, żeby nie oglądać swojego profilu w tym widoku
     if user == request.user:
-        return redirect('profile')
+        return redirect('profile_detail')
 
     profile = get_object_or_404(UserProfile, user=user)
 
