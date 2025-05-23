@@ -2,12 +2,12 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from app_scinet.views import download_article_file as scinet_download_article_file
+from app_scinet.download_view import download_article_file as scinet_download_article_file
 from app_scinet.views.front_pages_view import (index_page, article_page, article_page_p, login_page, user_register_page, \
                                                logout_page, like_article, unlike_article, comment_article, add_article,
-                                               edit_profile, profile_view, edit_article,
+                                               edit_profile, profile_view, edit_article, user_profile_view,
                                                delete_article, my_articles, send_friend_request, accept_friend_request,
-                                               decline_friend_request, friends_list, user_profile_view,
+                                               decline_friend_request, friends_list,
                                                follow_article, unfollow_article)
 
 urlpatterns = [
@@ -32,7 +32,7 @@ urlpatterns = [
     path('accept-request/<int:request_id>/', accept_friend_request, name='accept_friend_request'),  # akceptacja zaproszenia
     path('decline-request/<int:request_id>/', decline_friend_request, name='decline_friend_request'),  # odrzucenie zaproszenia
     path('friends/', friends_list, name='friends_list'),
-    path('article/<int:article_id>/download/', scinet_download_article_file, name='download_article_file'), 
+    path('article/<int:article_id>/download/', scinet_download_article_file, name='download_article_file'),
     path('follow/<int:article_id>/', follow_article, name='follow_article'),
     path('unfollow/<int:article_id>/', unfollow_article, name='unfollow_article'),
 
