@@ -29,6 +29,13 @@
                            class="block text-sm font-medium text-gray-700">Treść</label>
                     {{ form.content }}
                 </div>
+                
+                <!-- Poziom dostępu -->
+                <div>
+                    <label for="{{ form.access_level.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700">Dostęp</label>
+                    {{ form.access_level }}
+                </div>
 
                 <!-- Plik -->
                 <div>
