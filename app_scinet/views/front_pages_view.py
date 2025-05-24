@@ -36,8 +36,30 @@ def get_article_related_details(request, article):
         article.followed_by_user = False
 
 def index_page(request):
-    # Pobieranie listy wszystkich artykułów posortowanych od najnowszego do najstarszego
-    articles_list = Article.objects.all().order_by('-created_at')
+    if request.user.is_authenticated:
+        # Szukamy wszystkich zaakceptowanych znajomości w obie strony
+        accepted_friendships = FriendshipModel.objects.filter(
+            Q(user=request.user) | Q(friend=request.user),
+            status='accepted'
+        )
+
+        # Wyciągamy ID znajomych
+        friend_ids = set()
+        for friendship in accepted_friendships:
+            if friendship.user == request.user:
+                friend_ids.add(friendship.friend.id)
+            else:
+                friend_ids.add(friendship.user.id)
+
+        # Filtrujemy artykuły
+        articles_list = Article.objects.filter(
+            Q(access_level='public') |
+            Q(access_level='private', user=request.user) |
+            Q(access_level='friends', user__id__in=friend_ids)
+        ).order_by('-created_at')
+    else:
+        # Tylko publiczne dla niezalogowanych
+        articles_list = Article.objects.filter(access_level='public').order_by('-created_at')
 
     # Inicjalizacja mechanizmu paginacji z limitem 5 artykułów na stronę
     paginator = Paginator(articles_list, 5)
