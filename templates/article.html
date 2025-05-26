@@ -1,15 +1,17 @@
 {% extends 'basic_template.html' %}
 {% load static %}
 {% block content %}
+
     <!-- Feed -->
     <section class="lg:col-span-2 space-y-6">
         <!-- Post -->
         <div class="bg-white p-4 rounded-md shadow">
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <img src="https://randomuser.me/api/portraits/men/32.jpg" class="rounded-full w-12 h-12">
+                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Zdjęcie profilowe użytkownika"
+                     class="rounded-full w-12 h-12">
                 <div>
-                    <p class="font-semibold">Antoni Wilinski</p>
-                    <p class="text-sm text-gray-500">recommended</p>
+                    <p class="font-semibold">{{ article.user.username }}</p>
+                    <p class="text-sm text-gray-500">polecane</p>
                 </div>
             </div>
             <div class="mt-4">
@@ -17,32 +19,64 @@
                     <img src="{{ article.image.url }}" alt="Miniaturka artykułu"
                          class="rounded-md h-[200px] mx-auto object-fill">
                 {% else %}
-                    <img src="https://picsum.photos/600/200?random=1" class="rounded-md w-full">
+                    <img src="https://picsum.photos/600/200?random=1" alt="Miniaturka artykułu"
+                         class="rounded-md w-full">
                 {% endif %}
                 <h2 class="mt-2 font-bold">{{ article.title }}</h2>
                 <p class="text-sm text-gray-600">{{ article.content }} </p>
-                <div class="flex flex-wrap gap-2 mt-2">
-                    <button class="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">Download</button>
-                    <button class="text-sm text-gray-600">Save</button>
+
+                <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 mt-4">
+
+                    <!-- Pobierz plik -->
+                        <a href="{% url 'download_article_file' article.id %}"
+                            class="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">
+                            🡇 Pobierz
+                        </a>
+
+                    <!-- Follow/Unfollow -->
                     {% if article.followed_by_user %}
-                            <form action="{% url 'unfollow_article' article.id %}" method="post" class="inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="requester" value="article">
-                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
-                                    <span class="text-base">🔕</span>
-                                    <span>Unfollow</span>
-                                </button>
-                            </form>
-                        {% else %}
-                            <form action="{% url 'follow_article' article.id %}" method="post" class="inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="requester" value="article">
-                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
-                                    <span class="text-base">🔔</span>
-                                    <span>Follow</span>
-                                </button>
-                            </form>
-                        {% endif %}
+                        <form action="{% url 'unfollow_article' article.id %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="requester" value="article">
+                            <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                <span class="text-base">🔕</span>
+                                <span>Unfollow</span>
+                            </button>
+                        </form>
+                    {% else %}
+                        <form action="{% url 'follow_article' article.id %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="requester" value="article">
+                            <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                <span class="text-base">🔔</span>
+                                <span>Obserwuj</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <!-- Liczba polubień -->
+                    <span>{{ article.like_count }}❤️</span>
+
+                    <!-- Like / unlike -->
+                    {% if article.liked_by_user %}
+                        <form action="{% url 'unlike_article' article.id %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                <span class="text-base">👍</span>
+                                <span>Lubisz to</span>
+                            </button>
+                        </form>
+                    {% else %}
+                        <form action="{% url 'like_article' article.id %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                <span class="text-base">👍</span>
+                                <span>Polub</span>
+                            </button>
+                        </form>
+                    {% endif %}
+                    <!-- Liczba wyświetleń -->
+                        <span>{{ article.read_count }} wyświetleń</span>
                 </div>
             </div>
         </div>
@@ -75,16 +109,8 @@
         </div>
     </section>
 {% endblock %}
+
 {% block sidebar %}
     <!-- Sidebar -->
     {% include "common/_sidebar.html" %}
 {% endblock %}
-
-<h2>{{ article.title }}</h2>
-<p>{{ article.content }}</p>
-
-{% if article.file %}
-    <a href="{% url 'download_article_file' article.id %}" class="btn btn-primary">📄 Pobierz plik</a>
-{% endif %}
-
-</a>
