@@ -1,7 +1,7 @@
 # interactionModel.py
 from django.db import models
 from django.contrib.auth.models import User
-from .ArticleModel import Article  # <- Import Twojego modelu artykułu
+from app_scinet.models.ArticleModel import Article  # <- Import Twojego modelu artykułu
 
 
 # Model interakcji użytkownika z artykułem

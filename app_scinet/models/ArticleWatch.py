@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from app_scinet.models.ArticleModel import Article
+from app_scinet.models import Article
 from django.db import models
 
 
