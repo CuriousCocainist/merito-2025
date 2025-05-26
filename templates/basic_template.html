@@ -19,5 +19,24 @@
 </main>
 {% include 'footer.html' %}
 
+    <!-- TEST: To jest szablon bazowy -->
+
+    {% if messages %} <!-- jeśli nie ma pliku do pobrania, to wyskakuje okienko z taką informacją -->
+        <div id="message-popup" class="fixed inset-0 flex items-center justify-center z-50">
+            <div class="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded shadow-md text-center max-w-md">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <script>
+            setTimeout(() => {
+                const popup = document.getElementById('message-popup');
+                if (popup) popup.style.display = 'none';
+            }, 3000); // okienko znika po 3 sekundach
+        </script>
+    {% endif %}
+
 </body>
 </html>

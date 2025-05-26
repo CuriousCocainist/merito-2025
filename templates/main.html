@@ -12,7 +12,7 @@
                     {% if article.user.userprofile.avatar %}
                         <img src="{{ article.user.userprofile.avatar.url }}" class="rounded-full w-12 h-12" alt="Avatar użytkownika">
                     {% else %}
-                        <img src="https://randomuser.me/api/portraits/men/32.jpg" class="rounded-full w-12 h-12" alt="Domyślny avatar">
+                        <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12" alt="Domyślny avatar">
                     {% endif %}
                     <div>
                         <p class="font-semibold">{{ article.user.first_name }} {{ article.user.last_name }}
@@ -43,17 +43,18 @@
                 </p>
 
                 <!-- Informacje dodatkowe -->
-                <p class="text-sm text-gray-500 mt-2">{{ article.created_at|date:"F Y" }} • {{ article.read_count }} wyświetleń</p>
+                <p class="text-sm text-gray-500 mt-2">
+                    {{ article.created_at|date:"F Y" }} • {{ article.views }} wyświetleń</p>
 
                 <!-- Przyciski Download, Save, Follow oraz Lubię to i Komentuj w jednej linii -->
-                <div class="mt-6 flex justify-between gap-4 text-sm">
+                <div class="mt-6 flex justify-between items-center text-sm">
                     <!-- Przyciski po lewej -->
-                    <div class="flex gap-4">
+                    <div class="flex items-center gap-4">
                         <a href="{% url 'download_article_file' article.id %}" class="
-                        text-blue-600 hover:text-blue-800">Pobierz
+                        flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">
+                            🡇 Pobierz
                         </a>
 
-                        <button class="text-sm text-gray-600">Zapisz</button>
                         {% if article.followed_by_user %}
                             <form action="{% url 'unfollow_article' article.id %}" method="post" class="inline">
                                 {% csrf_token %}
@@ -77,8 +78,8 @@
                         {% endif %}
                     </div>
 
-                    <div class="flex items-center gap-4 text-sm text-gray-500">
-
+                    <!-- Przyciski po prawej -->
+                    <div class="flex items-center gap-4 text-gray-500">
                         <span>{{ article.like_count }}❤️</span>
 
                         {% if article.liked_by_user %}
