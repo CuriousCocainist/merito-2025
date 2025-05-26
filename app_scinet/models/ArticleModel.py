@@ -42,6 +42,7 @@ class Article(models.Model):
         choices=ACCESS_CHOICES,
         default='public',
     )
+    read_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.title

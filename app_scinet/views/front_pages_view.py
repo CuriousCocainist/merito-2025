@@ -95,6 +95,9 @@ def index_page(request):
 def article_page(request, article_id):
     article = get_object_or_404(Article, id=article_id)
 
+    article.read_count += 1   # zwiększa liczbę wyświetleń przy każdej odsłonie
+    article.save()
+
     get_article_related_details(
         request=request,
         article=article
@@ -421,7 +424,12 @@ def user_profile_view(request, user_id):  # Stworzenie funkcji user_profile_view
     if user == request.user:
         return redirect('profile_detail')
 
-    profile = get_object_or_404(UserProfile, user=user)
+    # Szuka profilu powiązanego z użytkownikiem lub zwraca None, jeśli nie istnieje
+    try:
+        profile = UserProfile.objects.filter(user=user).first()
+    except UserProfile.DoesNotExist:
+        profile = None
+
 
     friendship = FriendshipModel.objects.filter(
         Q(user=request.user, friend=user) | Q(user=user, friend=request.user)
