@@ -591,3 +591,15 @@ def friends_list(request):
         'pending_requests_count': pending_requests_count,
     }
     return render(request, 'friends_list.html', context)
+
+@login_required
+def search(request):
+    query = request.GET.get('q')
+    results = []
+    if query:
+        results = Article.objects.filter(
+            Q(title__icontains=query) |
+            Q(content__icontains=query) |
+            Q(user__username__icontains=query)
+        )
+    return render(request, 'search_results.html', {'results': results, 'query': query})

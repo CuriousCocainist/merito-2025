@@ -1,0 +1,11 @@
+{% extends 'basic_template.html' %}
+{% block content %}
+<h1>Search results for "{{ query }}"</h1>
+<ul>
+    {% for article in results %}
+        <li><a href="{% url 'article' article.id %}">{{ article.title }}</a></li>
+    {% empty %}
+        <li>No results found.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

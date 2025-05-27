@@ -8,7 +8,7 @@ from app_scinet.views.front_pages_view import (index_page, article_page, article
                                                edit_profile, profile_view, edit_article, user_profile_view,
                                                delete_article, my_articles, send_friend_request, accept_friend_request,
                                                decline_friend_request, friends_list,
-                                               follow_article, unfollow_article)
+                                               follow_article, unfollow_article, search)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -35,7 +35,7 @@ urlpatterns = [
     path('article/<int:article_id>/download/', scinet_download_article_file, name='download_article_file'),
     path('follow/<int:article_id>/', follow_article, name='follow_article'),
     path('unfollow/<int:article_id>/', unfollow_article, name='unfollow_article'),
-
+    path('search/', search, name='search')
 
 
 ]
