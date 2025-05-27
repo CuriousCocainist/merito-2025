@@ -95,8 +95,13 @@ def index_page(request):
 def article_page(request, article_id):
     article = get_object_or_404(Article, id=article_id)
 
-    article.read_count += 1   # zwiększa liczbę wyświetleń przy każdej odsłonie
-    article.save()
+    session_key = f"viewed_article_{article.id}"
+    if not request.session.get(session_key, False):
+        article.read_count += 1
+        article.save()
+        request.session[session_key] = True
+
+    article.like_count = Interaction.objects.filter(article=article, type='like').count()
 
     get_article_related_details(
         request=request,
