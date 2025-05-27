@@ -1,0 +1,11 @@
+<div class="mt-8 flex justify-between items-center">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="text-sm text-blue-600 hover:underline">Poprzednia</a>
+    {% endif %}
+
+    <span class="text-sm text-gray-500">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="text-sm text-blue-600 hover:underline">Następna</a>
+    {% endif %}
+</div>

@@ -586,3 +586,24 @@ def friends_list(request):
         'pending_requests_count': pending_requests_count,
     }
     return render(request, 'friends_list.html', context)
+
+@login_required
+def followed_articles(request):
+    followed_interactions = Interaction.objects.filter(user=request.user, type='like')
+    followed_articles = Article.objects.filter(id__in=followed_interactions.values('article_id'))
+
+    # Annotate articles with liked_by_user status
+    articles_with_status = []
+    for article in followed_articles:
+        article.liked_by_user = followed_interactions.filter(article=article).exists()
+        articles_with_status.append(article)
+
+    paginator = Paginator(articles_with_status, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'title': 'Obserwowane artykuły',
+    }
+    return render(request, 'followed_articles.html', context)
