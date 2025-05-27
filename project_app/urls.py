@@ -7,8 +7,8 @@ from app_scinet.views.front_pages_view import (index_page, article_page, article
                                                logout_page, like_article, unlike_article, comment_article, add_article,
                                                edit_profile, profile_view, edit_article, user_profile_view,
                                                delete_article, my_articles, send_friend_request, accept_friend_request,
-                                               decline_friend_request, friends_list,
-                                               follow_article, unfollow_article, search)
+                                               decline_friend_request, friends_list, search,
+                                               follow_article, unfollow_article, followed_articles)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -32,6 +32,7 @@ urlpatterns = [
     path('accept-request/<int:request_id>/', accept_friend_request, name='accept_friend_request'),  # akceptacja zaproszenia
     path('decline-request/<int:request_id>/', decline_friend_request, name='decline_friend_request'),  # odrzucenie zaproszenia
     path('friends/', friends_list, name='friends_list'),
+    path('followed-articles/', followed_articles, name='followed_articles'),
     path('article/<int:article_id>/download/', scinet_download_article_file, name='download_article_file'),
     path('follow/<int:article_id>/', follow_article, name='follow_article'),
     path('unfollow/<int:article_id>/', unfollow_article, name='unfollow_article'),
