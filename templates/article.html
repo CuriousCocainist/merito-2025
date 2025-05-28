@@ -1,34 +1,111 @@
 {% extends 'basic_template.html' %}
 {% load static %}
 {% block content %}
+
     <!-- Feed -->
     <section class="lg:col-span-2 space-y-6">
+
         <!-- Post -->
-        <div class="bg-white p-4 rounded-md shadow">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <img src="https://randomuser.me/api/portraits/men/32.jpg" class="rounded-full w-12 h-12">
-                <div>
-                    <p class="font-semibold">Antoni Wilinski</p>
-                    <p class="text-sm text-gray-500">recommended</p>
-                </div>
+        <div class="bg-white p-4 rounded-md shadow space-y-6">
+
+            <!-- Miniaturka artykułu -->
+            {% if article.image %}
+                <img src="{{ article.image.url }}" alt="Miniaturka artykułu"
+                     class="w-full h-[250px] object-cover rounded-md">
+            {% else %}
+                <img src="https://picsum.photos/seed/{{ article.id }}/800/250" alt="Domyślny obraz"
+                     class="w-full h-[250px] object-cover rounded-md">
+            {% endif %}
+
+            <!-- Autor -->
+            <div class="flex items-center gap-4">
+                <a href="{% url 'user_profile_view' article.user.id %}" class="flex items-center gap-2">
+                    {% if article.user.userprofile.avatar %}
+                        <img src="{{ article.user.userprofile.avatar.url }}" class="rounded-full w-12 h-12"
+                             alt="Avatar użytkownika">
+                    {% else %}
+                        <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12"
+                             alt="Domyślny avatar">
+                    {% endif %}
+                    <div>
+                        <p class="font-semibold">{{ article.user.first_name }} {{ article.user.last_name }}</p>
+                    </div>
+                </a>
             </div>
-            <div class="mt-4">
-                {% if article.image %}
-                    <img src="{{ article.image.url }}" alt="Miniaturka artykułu"
-                         class="rounded-md h-[200px] mx-auto object-fill">
-                {% else %}
-                    <img src="https://picsum.photos/600/200?random=1" class="rounded-md w-full">
-                {% endif %}
-                <h2 class="mt-2 font-bold">{{ article.title }}</h2>
-                <p class="text-sm text-gray-600">{{ article.content }} </p>
-                <div class="flex flex-wrap gap-2 mt-2">
-                    <button class="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">Download</button>
-                    <button class="text-sm text-gray-600">Save</button>
-                    <button class="text-sm text-gray-600">Follow</button>
+
+            <!-- Tytuł, data utworzenia i liczba wyświetleń -->
+            <div>
+                <h2 class="mt-2 text-2xl font-bold text-gray-900">{{ article.title }}</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    {{ article.created_at|date:"j F Y" }} • {{ article.read_count }} wyświetleń
+                </p>
+            </div>
+
+            <!-- Przyciski -->
+                <div class="mt-6 flex justify-between items-center text-sm text-gray-500">
+                    <!-- Przyciski po lewej: Pobierz, Obserwuj -->
+                    <div class="flex items-center gap-4">
+
+                    <!-- Pobierz plik -->
+                        <a href="{% url 'download_article_file' article.id %}"
+                            class="flex items-center gap-1 bg-blue-100
+                            text-blue-700 px-3 py-1 rounded-md text-sm">
+                            🡇 Pobierz
+                        </a>
+
+                        <!-- Follow/Unfollow -->
+                        {% if article.followed_by_user %}
+                            <form action="{% url 'unfollow_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="requester" value="article">
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">🔕</span>
+                                    <span>Unfollow</span>
+                                </button>
+                            </form>
+                        {% else %}
+                            <form action="{% url 'follow_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="requester" value="article">
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">🔔</span>
+                                    <span>Obserwuj</span>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    <!-- Przycisk po prawej: Like -->
+                    <div class="flex items-center gap-4">
+                        <span>{{ article.like_count }} ❤️</span>
+
+                        {% if article.liked_by_user %}
+                            <form action="{% url 'unlike_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">👍</span>
+                                    <span>Lubisz to</span>
+                                </button>
+                            </form>
+                        {% else %}
+                            <form action="{% url 'like_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">👍</span>
+                                    <span>Polub</span>
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
                 </div>
+
+            <!-- Treść artykułu -->
+            <div class="mt-6 leading-relaxed text-base text-gray-700">
+                {{ article.content }}
             </div>
         </div>
 
+        <!-- Komentarze -->
         <div class="bg-white p-4 rounded-md shadow mt-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">Komentarze</h2>
 
@@ -36,13 +113,19 @@
                 {% for comment in comments %}
                     <div class="divide-y divide-gray-200">
                         <div class="flex items-start gap-4 py-4">
-                            <img src="https://images.unsplash.com/photo-1502685104226-ee32379fefbe?ixlib=rb-4.0.3&auto=format&fit=facearea&facepad=8&w=256&h=256&q=80"
-                                 alt="" class="w-10 h-10 rounded-full bg-gray-100">
+                            {% if comment.user.userprofile.avatar %}
+                                <img src="{{ comment.user.userprofile.avatar.url }}" alt="Avatar użytkownika"
+                                     class="w-10 h-10 rounded-full bg-gray-100">
+                            {% else %}
+                                <img src="{% static 'img/profil.jpg' %}" alt="Domyślny avatar"
+                                     class="w-10 h-10 rounded-full bg-gray-100">
+                            {% endif %}
                             <div>
                                 <h3 class="font-medium text-gray-900">{{ comment.user.username }}</h3>
-                                <span class="border inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-blue-700/10 ring-inset">
-              {{ comment.created_at|date:"j E Y" }}
-            </span>
+                                <span class="border inline-flex items-center rounded-md
+                                bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1
+                                ring-blue-700/10 ring-inset">{{ comment.created_at|date:"j E Y" }}
+                                </span>
                                 <div class="mt-4 space-y-6 text-base text-gray-600 italic">
                                     {{ comment.content }}
                                 </div>
@@ -55,8 +138,11 @@
             {% endif %}
             {% include "_comment_form.html" %}
         </div>
+
     </section>
+
 {% endblock %}
+
 {% block sidebar %}
     <!-- Sidebar -->
     {% include "common/_sidebar.html" %}

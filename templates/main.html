@@ -4,39 +4,83 @@
     <!-- Feed -->
     <section class="lg:col-span-2 space-y-6">
         <!-- Post -->
-        {% for article in articles %}
+        {% for article in page_obj %}
             <div class="bg-white p-4 rounded-md shadow">
-                <a href="{% url 'article' article.id %}">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                        <img src="https://randomuser.me/api/portraits/men/32.jpg" class="rounded-full w-12 h-12">
-                        <div>
-                            <p class="font-semibold">Antoni Wilinski</p>
-                            <p class="text-sm text-gray-500">recommended</p>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        {% if article.image %}
-                            <img src="{{ article.image.url }}" alt="Miniaturka artykułu" class="rounded-md h-[200px] mx-auto object-fill">
-                        {% else %}
-                            <img src="https://picsum.photos/600/200?random=1" class="rounded-md w-full">
-                        {% endif %}
-                        <h2 class="mt-2 font-bold">{{ article.title }}</h2>
-                        <p class="text-sm text-gray-600">Conference Paper · March 2025 · 8 Reads</p>
+
+                <!-- Link do profilu użytkownika -->
+                <a href="{% url 'user_profile_view' article.user.id %}" class="flex items-center gap-2 mb-4">
+                    {% if article.user.userprofile.avatar %}
+                        <img src="{{ article.user.userprofile.avatar.url }}" class="rounded-full w-12 h-12" alt="Avatar użytkownika">
+                    {% else %}
+                        <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12" alt="Domyślny avatar">
+                    {% endif %}
+                    <div>
+                        <p class="font-semibold">{{ article.user.first_name }} {{ article.user.last_name }}
+                        </p>
+                        <p class="text-sm text-gray-500">polecane
+                        </p>
                     </div>
                 </a>
 
+                <!-- Link do artykułu: zdjęcie + tytuł -->
+                <a href="{% url 'article' article.id %}" class="block">
+                    {% if article.image %}
+                        <img src="{{ article.image.url }}" alt="Miniaturka artykułu"
+                             class="w-full h-[250px] object-cover rounded-md mb-2">
+                    {% else %}
+                        <img src="https://picsum.photos/seed/{{ article.id }}/800/250"
+                             alt="Domyślny obraz" class="w-full h-[250px] object-cover rounded-md">
+                    {% endif %}
+                    <h2 class="text-xl font-bold text-gray-800 hover:underline mb-1">{{ article.title }}</h2>
+                </a>
+
+                <!-- Podsumowanie artykułu -->
+                <p class="text-gray-600 mt-2">
+                    {{ article.content|truncatechars:100 }}
+                    <a href="{% url 'article' article.id %}" class="text-blue-700
+                    hover:text-blue-500 text-sm font-semibold transition">Czytaj dalej...
+                    </a>
+                </p>
+
+                <!-- Informacje dodatkowe -->
+                <p class="text-sm text-gray-500 mt-2">
+                    {{ article.created_at|date:"F Y" }} • {{ article.read_count }} wyświetleń</p>
+
                 <!-- Przyciski Download, Save, Follow oraz Lubię to i Komentuj w jednej linii -->
-                <div class="mt-6 flex justify-between gap-4 text-sm">
+                <div class="mt-6 flex justify-between items-center text-sm">
                     <!-- Przyciski po lewej -->
-                    <div class="flex gap-4">
-                        <button class="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">Download</button>
-                        <button class="text-sm text-gray-600">Save</button>
-                        <button class="text-sm text-gray-600">Follow</button>
+                    <div class="flex items-center gap-4">
+                        <a href="{% url 'download_article_file' article.id %}" class="
+                        flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">
+                            🡇 Pobierz
+                        </a>
+
+                        {% if article.followed_by_user %}
+                            <form action="{% url 'unfollow_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="requester" value="main">
+                                <input type="hidden" name="requester_url" value="{{ request.get_full_path }}">
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">🔕</span>
+                                    <span>Unfollow</span>
+                                </button>
+                            </form>
+                        {% else %}
+                            <form action="{% url 'follow_article' article.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="requester" value="main">
+                                <input type="hidden" name="requester_url" value="{{ request.get_full_path }}">
+                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
+                                    <span class="text-base">🔔</span>
+                                    <span>Obserwuj</span>
+                                </button>
+                            </form>
+                        {% endif %}
                     </div>
 
-                    <div class="flex items-center gap-4 text-sm text-gray-500">
-
-                        <span>{{ article.like_count }} polubień</span>
+                    <!-- Przyciski po prawej -->
+                    <div class="flex items-center gap-4 text-gray-500">
+                        <span>{{ article.like_count }}❤️</span>
 
                         {% if article.liked_by_user %}
                             <form action="{% url 'unlike_article' article.id %}" method="post" class="inline">
@@ -51,7 +95,7 @@
                                 {% csrf_token %}
                                 <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
                                     <span class="text-base">👍</span>
-                                    <span>I like it</span>
+                                    <span>Polub</span>
                                 </button>
                             </form>
                         {% endif %}
@@ -67,11 +111,23 @@
             {% endif %}
         </span>
                         </a>
-
                     </div>
                 </div>
             </div>
+            </div>
         {% endfor %}
+        <!-- Paginacja -->
+        <div class="mt-8 flex justify-between items-center">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="text-sm text-blue-600 hover:underline">Poprzednia</a>
+            {% endif %}
+
+            <span class="text-sm text-gray-500">Strona {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="text-sm text-blue-600 hover:underline">Następna</a>
+            {% endif %}
+        </div>
     </section>
 
 {% endblock %}
@@ -80,6 +136,3 @@
                     {% include "common/_sidebar.html" %}
 
 {% endblock %}
-
-
-

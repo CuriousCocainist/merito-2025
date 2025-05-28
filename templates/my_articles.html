@@ -64,6 +64,7 @@
                         <!-- Pozostałe kolumny (bez sortowania) -->
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Lajki</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Komentarze</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Dostęp</th>
                         <th class="py-3.5 px-3 text-right text-sm font-semibold text-gray-900">Akcje</th>
                     </tr>
                     </thead>
@@ -88,6 +89,18 @@
                             <!-- Liczba komentarzy -->
                             <td class="px-3 py-4 text-sm text-gray-500">
                                 {{ article.comment_count }}
+                            </td>
+                            <!-- Poziom dostępu artykułów -->
+                            <td class="px-3 py-4 text-sm text-gray-500">
+                                {% if article.access_level == 'public' %}
+                                    Publiczny
+                                {% elif article.access_level == 'private' %}
+                                    Prywatny
+                                {% elif article.access_level == 'friends' %}
+                                    Tylko dla znajomych
+                                {% else %}
+                                    -
+                                {% endif %}
                             </td>
                             <!-- Linki do edycji i usunięcia -->
                             <td class="px-3 py-4 text-sm text-right text-gray-500 space-x-2">

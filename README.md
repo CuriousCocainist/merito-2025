@@ -32,6 +32,7 @@ python manage.py migrate
 
 7. Wgranie przykładowych danych do projektu
 ```sh
+python manage.py seed_users
 python manage.py seed_articles
 ```
 

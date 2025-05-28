@@ -1,0 +1,220 @@
+{% extends 'basic_template.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- Lista znajomych -->
+    <section class="lg:col-span-2 space-y-6">
+        <div class="bg-white p-6 rounded-md shadow">
+            <!-- Wyświetlanie komunikatów -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="bg-green-50 text-green-800 p-4 rounded-lg mb-4 {% if message.tags %}{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Informacja o oczekujących zaproszeniach -->
+            <div class="mb-6">
+                {% if pending_requests_count > 0 %}
+                    <div class="pending-requests bg-blue-50 p-4 rounded-lg">
+                        <p class="text-blue-800 mb-4">
+                            Masz <strong>{{ pending_requests_count }}</strong> oczekujących zaproszeń.
+                        </p>
+                        <div class="space-y-4">
+                            {% for request in pending_requests %}
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center gap-4">
+                                        {% if request.user.userprofile and request.user.userprofile.avatar %}
+                                            <img src="{{ request.user.userprofile.avatar.url }}"
+                                                 alt="{{ request.user.username }}"
+                                                 class="w-12 h-12 rounded-full object-cover">
+                                        {% else %}
+                                            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                                <span class="text-blue-600 text-xl font-semibold">
+                                                    {{ request.user.username|make_list|first|upper }}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <p class="font-semibold">{{ request.user.username }}</p>
+                                            {% if request.user.userprofile and request.user.userprofile.bio %}
+                                                <p class="text-sm text-gray-500">{{ request.user.userprofile.bio|truncatechars:50 }}</p>
+                                            {% endif %}
+                                            <p class="text-sm text-gray-500">Otrzymano zaproszenie</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <a href="{% url 'user_profile_view' user_id=request.user.id %}"
+                                           class="text-blue-600 hover:text-blue-800">
+                                            Zobacz profil
+                                        </a>
+                                        <form method="POST" action="{% url 'accept_friend_request' request.id %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500 transition">
+                                                Akceptuj
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{% url 'decline_friend_request' request.id %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
+                                                Odrzuć
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-gray-500">Nie masz żadnych oczekujących zaproszeń.</p>
+                {% endif %}
+            </div>
+
+            <h1 class="text-2xl font-bold mb-6">Moi znajomi</h1>
+
+            {% if friends %}
+                <div class="space-y-4">
+                    {% for friend in friends %}
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-4">
+                                {% if friend.userprofile and friend.userprofile.avatar %}
+                                    <img src="{{ friend.userprofile.avatar.url }}"
+                                         alt="{{ friend.username }}"
+                                         class="w-12 h-12 rounded-full object-cover">
+                                {% else %}
+                                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <span class="text-blue-600 text-xl font-semibold">
+                                            {{ friend.username|make_list|first|upper }}
+                                        </span>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <p class="font-semibold">{{ friend.username }}</p>
+                                    {% if friend.userprofile and friend.userprofile.bio %}
+                                        <p class="text-sm text-gray-500">{{ friend.userprofile.bio|truncatechars:50 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <a href="{% url 'user_profile_view' user_id=friend.id %}"
+                               class="text-blue-600 hover:text-blue-800">
+                                Zobacz profil
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <div class="text-gray-400 text-6xl mb-4">👥</div>
+                    <p class="text-xl text-gray-600 mb-2">Nie masz jeszcze znajomych</p>
+                    <p class="text-gray-500">Znajdź nowych znajomych poniżej</p>
+                </div>
+            {% endif %}
+
+            <!-- Użytkownicy z oczekującymi zaproszeniami -->
+            <div class="mt-12">
+                <h2 class="text-xl font-semibold mb-4">Użytkownicy z oczekującymi zaproszeniami</h2>
+                {% if pending_users_with_requests %}
+                    <div class="space-y-4">
+                        {% for item in pending_users_with_requests %}
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-4">
+                                    {% if item.user.userprofile and item.user.userprofile.avatar %}
+                                        <img src="{{ item.user.userprofile.avatar.url }}"
+                                             alt="{{ item.user.username }}"
+                                             class="w-12 h-12 rounded-full object-cover">
+                                    {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <span class="text-blue-600 text-xl font-semibold">
+                                                {{ item.user.username|make_list|first|upper }}
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="font-semibold">{{ item.user.username }}</p>
+                                        {% if item.user.userprofile and item.user.userprofile.bio %}
+                                            <p class="text-sm text-gray-500">{{ item.user.userprofile.bio|truncatechars:50 }}</p>
+                                        {% endif %}
+                                        {% if item.sent_by_current_user %}
+                                            <p class="text-sm text-gray-500">Wysłano zaproszenie</p>
+                                        {% else %}
+                                            <p class="text-sm text-gray-500">Otrzymano zaproszenie</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <a href="{% url 'user_profile_view' user_id=item.user.id %}"
+                                       class="text-blue-600 hover:text-blue-800">
+                                        Zobacz profil
+                                    </a>
+                                    <span class="text-gray-500 italic">Oczekuje na potwierdzenie</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>Brak użytkowników z oczekującymi zaproszeniami.</p>
+                {% endif %}
+            </div>
+
+            <!-- Sugerowani użytkownicy (bez żadnych relacji) -->
+            <div class="mt-12">
+                <h2 class="text-xl font-semibold mb-4">Sugerowani użytkownicy</h2>
+                {% if suggested_users_with_requests %}
+                    <div class="space-y-4">
+                        {% for item in suggested_users_with_requests %}
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center gap-4">
+                                    {% if item.user.userprofile and item.user.userprofile.avatar %}
+                                        <img src="{{ item.user.userprofile.avatar.url }}"
+                                             alt="{{ item.user.username }}"
+                                             class="w-12 h-12 rounded-full object-cover">
+                                    {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <span class="text-blue-600 text-xl font-semibold">
+                                                {{ item.user.username|make_list|first|upper }}
+                                            </span>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="font-semibold">{{ item.user.username }}</p>
+                                        {% if item.user.userprofile and item.user.userprofile.bio %}
+                                            <p class="text-sm text-gray-500">{{ item.user.userprofile.bio|truncatechars:50 }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <a href="{% url 'user_profile_view' user_id=item.user.id %}"
+                                       class="text-blue-600 hover:text-blue-800">
+                                        Zobacz profil
+                                    </a>
+                                    {% if item.request_exists %}
+                                        <span class="text-gray-500 italic">Oczekuje na potwierdzenie</span>
+                                    {% else %}
+                                        <form method="POST" action="{% url 'send_friend_request' user_id=item.user.id %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
+                                                Dodaj do znajomych
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p>Brak sugerowanych użytkowników do wyświetlenia.</p>
+                {% endif %}
+            </div>
+        </div>
+
+
+    </section>
+{% endblock %}
+
+{% block sidebar %}
+    {% include "common/_sidebar.html" %}
+{% endblock %}
