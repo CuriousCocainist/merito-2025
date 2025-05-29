@@ -27,7 +27,7 @@ class Command(BaseCommand):
 
         # Dodaj przykładowych użytkowników
         sample_users = [
-            {"username": "jan.kowalski", "email": "jan.kowalski@example.com", "first_name": "Jan", "last_name": "Kowalski", "bio": "Entuzjasta technologii.", "phone": "123456789", "birth": "1990-01-01", "location": "Warszawa"},
+            {"username": " ", "email": "jan.kowalski@example.com", "first_name": "Jan", "last_name": "Kowalski", "bio": "Entuzjasta technologii.", "phone": "123456789", "birth": "1990-01-01", "location": "Warszawa"},
             {"username": "anna.nowak", "email": "anna.nowak@example.com", "first_name": "Anna", "last_name": "Nowak", "bio": "Specjalistka ds. AI.", "phone": "987654321", "birth": "1988-03-15", "location": "Kraków"},
             {"username": "adam.kwiatkowski", "email": "adam.k@example.com", "first_name": "Adam", "last_name": "Kwiatkowski", "bio": "Front-end Developer.", "phone": "555111222", "birth": "1995-06-10", "location": "Gdańsk"},
             {"username": "ewa.zielinska", "email": "ewa.z@example.com", "first_name": "Ewa", "last_name": "Zielińska", "bio": "UX Designerka.", "phone": "666333444", "birth": "1992-09-23", "location": "Poznań"},
