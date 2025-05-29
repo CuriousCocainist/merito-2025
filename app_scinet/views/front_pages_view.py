@@ -267,13 +267,14 @@ def unfollow_article(request, article_id):
     if followed:
         followed.delete()
 
-    if requester == 'main':
-        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
-        # gdzie znajdował się nagłówek artykułu
-        return redirect(requester_url)
-
+    if requester == 'article':
         # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
-    return redirect('article', article_id=article_id)
+        return redirect('article', article_id=article_id)
+
+    # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
+    # z której akcja została wywołana
+    # dla requester == 'main' lub requester == 'followed_articles'
+    return redirect(requester_url)
 
 
 # Widok obsługujący komentowanie artykułu
@@ -596,16 +597,16 @@ def friends_list(request):
 
 @login_required
 def followed_articles(request):
-    followed_interactions = Interaction.objects.filter(user=request.user, type='like')
-    followed_articles = Article.objects.filter(id__in=followed_interactions.values('article_id'))
+    articles_watched = ArticleWatch.objects.filter(user=request.user)
+    articles_followed = Article.objects.filter(id__in=articles_watched.values('article_id'))
 
-    # Annotate articles with liked_by_user status
-    articles_with_status = []
-    for article in followed_articles:
-        article.liked_by_user = followed_interactions.filter(article=article).exists()
-        articles_with_status.append(article)
+    # Zebranie śledzonych artykułów, które istnieją, do zmiennej articles
+    articles = []
+    for article in articles_followed:
+        article.followed_by_user = articles_watched.filter(article=article).exists()
+        articles.append(article)
 
-    paginator = Paginator(articles_with_status, 5)
+    paginator = Paginator(articles, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
