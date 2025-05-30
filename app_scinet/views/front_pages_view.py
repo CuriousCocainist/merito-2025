@@ -190,8 +190,15 @@ def like_article(request, article_id):
             type='like'
         )
 
-    # Po dodaniu lajka przekierowujemy użytkownika z powrotem na stronę główną
-    return redirect('home')
+    # Po dodaniu lajka przekierowujemy użytkownika z powrotem na stronę na której byliśmy
+    # Pobierz poprzednią stronę (referer)
+    referer = request.META.get('HTTP_REFERER')
+
+    if referer:
+        return redirect(referer)
+    else:
+        # Domyślnie idź na home, jeśli referer nie jest ustawiony
+        return redirect('home')
 
 
 @login_required
@@ -209,8 +216,15 @@ def unlike_article(request, article_id):
     if like:
         like.delete()
 
-    return redirect('home')  # albo np. 'article' z powrotem
+    # Po dodaniu lajka przekierowujemy użytkownika z powrotem na stronę na której byliśmy
+    # Pobierz poprzednią stronę (referer)
+    referer = request.META.get('HTTP_REFERER')
 
+    if referer:
+        return redirect(referer)
+    else:
+        # Domyślnie idź na home, jeśli referer nie jest ustawiony
+        return redirect('home')
 
 # Widok obsługujący aktywację śledzenia artykułu
 # Tylko zalogowany użytkownik może śledzić artykuł
