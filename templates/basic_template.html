@@ -38,5 +38,37 @@
         </script>
     {% endif %}
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.like-toggle').forEach(button => {
+        button.addEventListener('click', function () {
+            const articleId = this.dataset.articleId;
+            const liked = this.dataset.liked === 'true';
+            const url = liked ? `/unlike/${articleId}/` : `/like/${articleId}/`;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Accept': 'application/json',
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    this.dataset.liked = data.liked.toString();
+                    this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub';
+
+                    //  aktualizacja liczby polubień (serc)
+                    const heartSpan = this.parentElement.querySelector('span');
+                    if (heartSpan) {
+                        heartSpan.textContent = `${data.like_count}❤️`;
+                    }
+                });
+        });
+    });
+})
+</script>
+
+
 </body>
 </html>

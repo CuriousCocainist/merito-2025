@@ -80,24 +80,26 @@
 
                     <!-- Przyciski po prawej -->
                     <div class="flex items-center gap-4 text-gray-500">
-                        <span>{{ article.like_count }}❤️</span>
+                        <span>{{ article.like_count }}❤️</span> <!-- wyświetla liczbę polubień-->
 
-                        {% if article.liked_by_user %}
-                            <form action="{% url 'unlike_article' article.id %}" method="post" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
-                                    <span class="text-base">👍</span>
-                                    <span>Lubisz to</span>
-                                </button>
-                            </form>
+                        {% if article.liked_by_user %} <!-- dynamicznie ustawia, czy użytkownik już polubił dany artykuł-->
+                            <button
+                                    class="like-toggle text-blue-600 hover:underline flex items-center gap-1"
+                                    data-liked="true"
+                                    data-article-id="{{ article.id }}"
+                            >
+                                <span class="text-base">👍</span>
+                                <span class="like-label">Lubisz to</span>
+                            </button>
                         {% else %}
-                            <form action="{% url 'like_article' article.id %}" method="post" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" class="text-blue-600 hover:underline flex items-center gap-1">
-                                    <span class="text-base">👍</span>
-                                    <span>Polub</span>
-                                </button>
-                            </form>
+                            <button
+                                    class="like-toggle text-blue-600 hover:underline flex items-center gap-1"
+                                    data-liked="false"
+                                    data-article-id="{{ article.id }}"
+                            >
+                                <span class="text-base">👍</span>
+                                <span class="like-label">Polub</span>
+                            </button>
                         {% endif %}
 
                         <a href="{% url 'article' article.id %}#komentarze"
