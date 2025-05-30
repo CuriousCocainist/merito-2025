@@ -19,6 +19,7 @@ from django.core.mail import send_mail # Dodano import send_mail
 from django.urls import reverse # Dodano import reverse
 from django.contrib.sites.shortcuts import get_current_site # Dodano import get_current_site
 from django.conf import settings # Dodano import settings
+from django.http import JsonResponse
 
 User = get_user_model() # Pobranie modelu User
 
@@ -99,7 +100,7 @@ def index_page(request):
     # Renderowanie strony wykorzystując szablon 'main.html' i przygotowany kontekst
     return render(request, 'main.html', context)
 
-def article_page(request, article_id):
+def article_page(request, article_id): # widok pojedynczego artykułu
     article = get_object_or_404(Article, id=article_id)
     article_like_count = Interaction.objects.filter(article=article, type='like').count()
 
@@ -113,8 +114,14 @@ def article_page(request, article_id):
 
     comments = Interaction.objects.filter(article=article, type='comment').order_by('created_at')
     comment_form = CommentForm()
-    context = {'article': article, 'comment_form': comment_form, 'comments': comments, 'article_like_count': article_like_count}
-
+    like_count = Interaction.objects.filter(article=article, type='like').count()
+    
+    context = {
+        'article': article,
+        'comment_form': comment_form,
+        'comments': comments,
+        'like_count': like_count,
+    }
     return render(request, 'article.html', context)
 
 
@@ -190,16 +197,11 @@ def like_article(request, article_id):
             type='like'
         )
 
-    # Po dodaniu lajka przekierowujemy użytkownika z powrotem na stronę na której byliśmy
-    # Pobierz poprzednią stronę (referer)
-    referer = request.META.get('HTTP_REFERER')
-
-    if referer:
-        return redirect(referer)
-    else:
-        # Domyślnie idź na home, jeśli referer nie jest ustawiony
-        return redirect('home')
-
+    # Zwracamy odpowiedź w formacie JSON:
+    return JsonResponse({
+        'liked': True, # użytkownik polubił artykuł
+        'like_count': Interaction.objects.filter(article=article, type='like').count() # zaktualizowaną liczbę polubień artykułu
+    })
 
 @login_required
 def unlike_article(request, article_id):
@@ -216,15 +218,11 @@ def unlike_article(request, article_id):
     if like:
         like.delete()
 
-    # Po dodaniu lajka przekierowujemy użytkownika z powrotem na stronę na której byliśmy
-    # Pobierz poprzednią stronę (referer)
-    referer = request.META.get('HTTP_REFERER')
-
-    if referer:
-        return redirect(referer)
-    else:
-        # Domyślnie idź na home, jeśli referer nie jest ustawiony
-        return redirect('home')
+    # Zwracamy odpowiedź w formacie JSON:
+    return JsonResponse({
+        'liked': False, # użytkownik usunął polubienie artykułu
+        'like_count': Interaction.objects.filter(article=article, type='like').count() # zaktualizowaną liczbę polubień artykułu
+    })
 
 # Widok obsługujący aktywację śledzenia artykułu
 # Tylko zalogowany użytkownik może śledzić artykuł
