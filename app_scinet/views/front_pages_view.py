@@ -101,6 +101,7 @@ def index_page(request):
 
 def article_page(request, article_id):
     article = get_object_or_404(Article, id=article_id)
+    article_like_count = Interaction.objects.filter(article=article, type='like').count()
 
     article.read_count += 1   # zwiększa liczbę wyświetleń przy każdej odsłonie
     article.save()
@@ -112,7 +113,7 @@ def article_page(request, article_id):
 
     comments = Interaction.objects.filter(article=article, type='comment').order_by('created_at')
     comment_form = CommentForm()
-    context = {'article': article, 'comment_form': comment_form, 'comments': comments}
+    context = {'article': article, 'comment_form': comment_form, 'comments': comments, 'article_like_count': article_like_count}
 
     return render(request, 'article.html', context)
 
