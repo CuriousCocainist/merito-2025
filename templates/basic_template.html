@@ -19,8 +19,6 @@
 </main>
 {% include 'footer.html' %}
 
-    <!-- TEST: To jest szablon bazowy -->
-
     {% if messages %} <!-- jeśli nie ma pliku do pobrania, to wyskakuje okienko z taką informacją -->
         <div id="message-popup" class="fixed inset-0 flex items-center justify-center z-50">
             <div class="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded shadow-md text-center max-w-md">
@@ -40,6 +38,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+    // Obsługa przycisku "Lubię to"
     document.querySelectorAll('.like-toggle').forEach(button => {
         button.addEventListener('click', function () {
             const articleId = this.dataset.articleId;
@@ -49,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch(url, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-CSRFToken': csrfToken, // Przekazuje token CSRF
                     'Accept': 'application/json',
                 },
             })
@@ -59,16 +61,70 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub';
 
                     //  aktualizacja liczby polubień (serc)
-                    const heartSpan = this.parentElement.querySelector('span');
-                    if (heartSpan) {
-                        heartSpan.textContent = `${data.like_count}❤️`;
+                    const likeInfo = this.parentElement.querySelector('.like-info');
+                    if (likeInfo) {
+                        const countSpan = likeInfo.querySelector('.like-count');
+                        if (countSpan) {
+                            countSpan.textContent = data.like_count;
+                        }
+                        // Zmienia kolor wypełnienia ikony serca
+                        const heartIcon = likeInfo.querySelector('.heart-icon');
+                        if (heartIcon) {
+                            if (data.liked) {
+                                heartIcon.setAttribute('fill', 'red');
+                                heartIcon.setAttribute('stroke', 'red');
+                            } else {
+                                heartIcon.setAttribute('fill', 'none');
+                                heartIcon.setAttribute('stroke', 'currentColor');
+                            }
+                        }
                     }
                 });
         });
     });
-})
+
+    // Obsługa przycisku "Obserwuj"
+    document.querySelectorAll('.follow-toggle').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const articleId = this.dataset.articleId;
+            const followed = this.dataset.followed === 'true';
+            const url = followed ? this.dataset.unfollowUrl : this.dataset.followUrl;
+            const label = this.querySelector(".follow-label");
+            const icon = this.querySelector("svg");
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    'article_id': articleId // przekazujemy ID artykułu
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    this.dataset.followed = data.followed.toString(); // Zmieniamy status w atrybucie data-followed
+                    if (label) {
+                        label.textContent = data.followed ? 'Nie obserwuj' : 'Obserwuj';
+                    }
+                    if (icon) {
+                        // Zmiana koloru wypełnienia ikony na złoto, gdy artykuł jest obserwowany
+                        if (data.followed) {
+                            icon.setAttribute('stroke', '#FFD700');  // Złoty kolor ikony
+                            icon.setAttribute('fill', '#FFD700');    // Złote wypełnienie
+                        } else {
+                            icon.setAttribute('stroke', 'currentColor');  // Zmieniamy na domyślny kolor
+                            icon.setAttribute('fill', 'none');
+                        }
+                    }
+                });
+        });
+    });
+});
 </script>
 
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
 </body>
 </html>

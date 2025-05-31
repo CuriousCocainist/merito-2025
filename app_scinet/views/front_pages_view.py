@@ -120,7 +120,7 @@ def article_page(request, article_id): # widok pojedynczego artykułu
         'article': article,
         'comment_form': comment_form,
         'comments': comments,
-        'like_count': like_count,
+        'article_like_count': article_like_count,
     }
     return render(request, 'article.html', context)
 
@@ -255,8 +255,9 @@ def follow_article(request, article_id):
         # gdzie znajdował się nagłówek artykułu
         return redirect(requester_url)
 
-        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
-    return redirect('article', article_id=article_id)
+    return JsonResponse({
+        'followed': True,  # Artykuł jest teraz zaobserwowany
+    })
 
 
 # Widok obsługujący dezaktywację śledzenia artykułu
@@ -284,10 +285,10 @@ def unfollow_article(request, article_id):
         # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
         return redirect('article', article_id=article_id)
 
-    # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
-    # z której akcja została wywołana
-    # dla requester == 'main' lub requester == 'followed_articles'
-    return redirect(requester_url)
+    return JsonResponse({
+        'followed': False,  # Artykuł przestał być zaobserwowany
+    })
+
 
 
 # Widok obsługujący komentowanie artykułu
