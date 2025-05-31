@@ -107,6 +107,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     this.dataset.followed = data.followed.toString(); // Zmieniamy status w atrybucie data-followed
                     if (label) {
                         label.textContent = data.followed ? 'Nie obserwuj' : 'Obserwuj';
+
+                        const articleCard = button.closest('.article-card');
+                        if (articleCard) {
+                            articleCard.remove();
+
+                            // Sprawdź, czy nie zostały żadne artykuły
+                            const remainingCards = document.querySelectorAll('.article-card');
+                            if (remainingCards.length === 0) {
+                                const section = document.querySelector('section.lg\\:col-span-2');
+                                if (section) {
+                                    const emptyMessage = document.createElement('p');
+                                    emptyMessage.textContent = 'Nie obserwujesz żadnego artykułu. Kliknij obserwuj 🔔 na wybranym artykule, aby go tutaj zobaczyć.';
+                                    emptyMessage.classList.add('mt-4', 'text-gray-600'); // opcjonalne style
+                                    section.appendChild(emptyMessage);
+                                }
+                            }
+                        }
                     }
                     if (icon) {
                         // Zmiana koloru wypełnienia ikony na złoto, gdy artykuł jest obserwowany
