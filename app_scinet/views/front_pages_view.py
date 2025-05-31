@@ -19,6 +19,7 @@ from django.core.mail import send_mail # Dodano import send_mail
 from django.urls import reverse # Dodano import reverse
 from django.contrib.sites.shortcuts import get_current_site # Dodano import get_current_site
 from django.conf import settings # Dodano import settings
+from django.http import JsonResponse
 
 User = get_user_model() # Pobranie modelu User
 
@@ -99,8 +100,9 @@ def index_page(request):
     # Renderowanie strony wykorzystując szablon 'main.html' i przygotowany kontekst
     return render(request, 'main.html', context)
 
-def article_page(request, article_id):
+def article_page(request, article_id): # widok pojedynczego artykułu
     article = get_object_or_404(Article, id=article_id)
+    article_like_count = Interaction.objects.filter(article=article, type='like').count()
 
     article.read_count += 1   # zwiększa liczbę wyświetleń przy każdej odsłonie
     article.save()
@@ -112,8 +114,14 @@ def article_page(request, article_id):
 
     comments = Interaction.objects.filter(article=article, type='comment').order_by('created_at')
     comment_form = CommentForm()
-    context = {'article': article, 'comment_form': comment_form, 'comments': comments}
-
+    like_count = Interaction.objects.filter(article=article, type='like').count()
+    
+    context = {
+        'article': article,
+        'comment_form': comment_form,
+        'comments': comments,
+        'like_count': like_count,
+    }
     return render(request, 'article.html', context)
 
 
@@ -189,9 +197,11 @@ def like_article(request, article_id):
             type='like'
         )
 
-    # Po dodaniu lajka przekierowujemy użytkownika z powrotem na stronę główną
-    return redirect('home')
-
+    # Zwracamy odpowiedź w formacie JSON:
+    return JsonResponse({
+        'liked': True, # użytkownik polubił artykuł
+        'like_count': Interaction.objects.filter(article=article, type='like').count() # zaktualizowaną liczbę polubień artykułu
+    })
 
 @login_required
 def unlike_article(request, article_id):
@@ -208,8 +218,11 @@ def unlike_article(request, article_id):
     if like:
         like.delete()
 
-    return redirect('home')  # albo np. 'article' z powrotem
-
+    # Zwracamy odpowiedź w formacie JSON:
+    return JsonResponse({
+        'liked': False, # użytkownik usunął polubienie artykułu
+        'like_count': Interaction.objects.filter(article=article, type='like').count() # zaktualizowaną liczbę polubień artykułu
+    })
 
 # Widok obsługujący aktywację śledzenia artykułu
 # Tylko zalogowany użytkownik może śledzić artykuł
@@ -267,13 +280,14 @@ def unfollow_article(request, article_id):
     if followed:
         followed.delete()
 
-    if requester == 'main':
-        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
-        # gdzie znajdował się nagłówek artykułu
-        return redirect(requester_url)
-
+    if requester == 'article':
         # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
-    return redirect('article', article_id=article_id)
+        return redirect('article', article_id=article_id)
+
+    # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
+    # z której akcja została wywołana
+    # dla requester == 'main' lub requester == 'followed_articles'
+    return redirect(requester_url)
 
 
 # Widok obsługujący komentowanie artykułu
@@ -596,16 +610,16 @@ def friends_list(request):
 
 @login_required
 def followed_articles(request):
-    followed_interactions = Interaction.objects.filter(user=request.user, type='like')
-    followed_articles = Article.objects.filter(id__in=followed_interactions.values('article_id'))
+    articles_watched = ArticleWatch.objects.filter(user=request.user)
+    articles_followed = Article.objects.filter(id__in=articles_watched.values('article_id'))
 
-    # Annotate articles with liked_by_user status
-    articles_with_status = []
-    for article in followed_articles:
-        article.liked_by_user = followed_interactions.filter(article=article).exists()
-        articles_with_status.append(article)
+    # Zebranie śledzonych artykułów, które istnieją, do zmiennej articles
+    articles = []
+    for article in articles_followed:
+        article.followed_by_user = articles_watched.filter(article=article).exists()
+        articles.append(article)
 
-    paginator = Paginator(articles_with_status, 5)
+    paginator = Paginator(articles, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
