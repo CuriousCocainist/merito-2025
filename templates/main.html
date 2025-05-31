@@ -9,16 +9,20 @@
 
                 <!-- Link do profilu użytkownika -->
                 <a href="{% url 'user_profile_view' article.user.id %}" class="flex items-center gap-2 mb-4">
-                    {% if article.user.userprofile.avatar %}
-                        <img src="{{ article.user.userprofile.avatar.url }}" class="rounded-full w-12 h-12" alt="Avatar użytkownika">
+                    {% if article.user.profile.avatar %}
+                        <img src="{{ article.user.profile.avatar.url }}" class="rounded-full w-12 h-12" alt="Avatar użytkownika">
                     {% else %}
                         <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12" alt="Domyślny avatar">
                     {% endif %}
                     <div>
-                        <p class="font-semibold">{{ article.user.first_name }} {{ article.user.last_name }}
+                        <p class="font-semibold">
+                            {% if article.user.first_name or article.user.last_name %}
+                                {{ article.user.first_name }} {{ article.user.last_name }}
+                            {% else %}
+                                {{ article.user.username }}
+                            {% endif %}
                         </p>
-                        <p class="text-sm text-gray-500">polecane
-                        </p>
+
                     </div>
                 </a>
 

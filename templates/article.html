@@ -21,15 +21,20 @@
             <!-- Autor -->
             <div class="flex items-center gap-4">
                 <a href="{% url 'user_profile_view' article.user.id %}" class="flex items-center gap-2">
-                    {% if article.user.userprofile.avatar %}
-                        <img src="{{ article.user.userprofile.avatar.url }}" class="rounded-full w-12 h-12"
+                    {% if article.user.profile.avatar %}
+                        <img src="{{ article.user.profile.avatar.url }}" class="rounded-full w-12 h-12"
                              alt="Avatar użytkownika">
                     {% else %}
                         <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12"
                              alt="Domyślny avatar">
                     {% endif %}
                     <div>
-                        <p class="font-semibold">{{ article.user.first_name }} {{ article.user.last_name }}</p>
+                        <p class="font-semibold">
+                            {% if article.user.first_name or article.user.last_name %}
+                                {{ article.user.first_name }} {{ article.user.last_name }}
+                            {% else %}
+                                {{ article.user.username }}
+                            {% endif %}
                     </div>
                 </a>
             </div>
@@ -40,6 +45,26 @@
                 <p class="mt-1 text-sm text-gray-500">
                     {{ article.created_at|date:"j F Y" }} • {{ article.read_count }} wyświetleń
                 </p>
+            </div>
+
+
+            <!-- Treść artykułu -->
+            <div class="mt-6 leading-relaxed text-base text-gray-700">
+                {{ article.content }}
+            </div>
+            <div class="mt-6 leading-relaxed text-base text-gray-700 inline-block">
+                {% if article.file %}
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                             stroke="currentColor" class="size-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"></path>
+                        </svg>
+                        To tego artykułu dołączony jest plik, kliknij "pobierz" aby go ściągnąć.
+                    </div>
+                {% else %}
+                    Brak pliku do pobrania.
+                {% endif %}
             </div>
 
             <!-- Przyciski -->
@@ -67,14 +92,18 @@
                             data-followed="{{ article.followed_by_user|yesno:"true,false" }}">
                         {% if article.followed_by_user %}
                             <!-- Ikona NIE obserwuj -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="size-6" style="stroke:#FFD700;">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"></path>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                 class="size-6" style="stroke:#FFD700;">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"></path>
                             </svg>
                             <span class="follow-label">Nie obserwuj</span>
                         {% else %}
                             <!-- Ikona obserwuj -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="#FFD700" class="size-6">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"></path>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                 stroke="#FFD700" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"></path>
                             </svg>
                             <span class="follow-label">Obserwuj</span>
                         {% endif %}
@@ -86,13 +115,18 @@
                     <!-- Liczba polubień + serce -->
                     <span class="like-info flex items-center gap-1 text-gray-700">
                         <span class="like-count">{{ article_like_count }}</span>
-                        {% if article.liked_by_user %} <!-- dynamicznie ustawia, czy użytkownik już polubił dany artykuł -->
-                            <svg class="heart-icon size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" stroke="red">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path>
+                        {% if article.liked_by_user %}
+                            <!-- dynamicznie ustawia, czy użytkownik już polubił dany artykuł -->
+                            <svg class="heart-icon size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                 fill="red" stroke="red">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path>
                             </svg>
                         {% else %}
-                            <svg class="heart-icon size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path>
+                            <svg class="heart-icon size-5" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                 viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path>
                             </svg>
                         {% endif %}
                     </span>
@@ -103,8 +137,10 @@
                             data-article-id="{{ article.id }}"
                             data-liked="{{ article.liked_by_user|yesno:'true,false' }}"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"></path>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                             stroke="currentColor" class="size-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"></path>
                         </svg>
                         <span class="like-label text-sm {% if article.liked_by_user %}underline text-blue-600{% else %}text-gray-600{% endif %}">
                         {% if article.liked_by_user %}Lubisz to{% else %}Polub to{% endif %}
@@ -112,10 +148,6 @@
             </div>
         </div>
 
-        <!-- Treść artykułu -->
-        <div class="mt-6 leading-relaxed text-base text-gray-700">
-            {{ article.content }}
-        </div>
 
         <!-- Komentarze -->
         <div class="bg-white p-4 rounded-md shadow mt-6">
@@ -125,8 +157,8 @@
                 {% for comment in comments %}
                     <div class="divide-y divide-gray-200">
                         <div class="flex items-start gap-4 py-4">
-                            {% if comment.user.userprofile.avatar %}
-                                <img src="{{ comment.user.userprofile.avatar.url }}" alt="Avatar użytkownika"
+                            {% if comment.user.profile.avatar %}
+                                <img src="{{ comment.user.profile.avatar.url }}" alt="Avatar użytkownika"
                                      class="w-10 h-10 rounded-full bg-gray-100">
                             {% else %}
                                 <img src="{% static 'img/profil.jpg' %}" alt="Domyślny avatar"

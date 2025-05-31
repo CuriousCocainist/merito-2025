@@ -25,8 +25,8 @@
                             {% for request in pending_requests %}
                                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                     <div class="flex items-center gap-4">
-                                        {% if request.user.userprofile and request.user.userprofile.avatar %}
-                                            <img src="{{ request.user.userprofile.avatar.url }}"
+                                        {% if request.user.profile and request.user.profile.avatar %}
+                                            <img src="{{ request.user.profile.avatar.url }}"
                                                  alt="{{ request.user.username }}"
                                                  class="w-12 h-12 rounded-full object-cover">
                                         {% else %}
@@ -38,8 +38,8 @@
                                         {% endif %}
                                         <div>
                                             <p class="font-semibold">{{ request.user.username }}</p>
-                                            {% if request.user.userprofile and request.user.userprofile.bio %}
-                                                <p class="text-sm text-gray-500">{{ request.user.userprofile.bio|truncatechars:50 }}</p>
+                                            {% if request.user.profile and request.user.profile.bio %}
+                                                <p class="text-sm text-gray-500">{{ request.user.profile.bio|truncatechars:50 }}</p>
                                             {% endif %}
                                             <p class="text-sm text-gray-500">Otrzymano zaproszenie</p>
                                         </div>
@@ -80,8 +80,8 @@
                     {% for friend in friends %}
                         <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                             <div class="flex items-center gap-4">
-                                {% if friend.userprofile and friend.userprofile.avatar %}
-                                    <img src="{{ friend.userprofile.avatar.url }}"
+                                {% if friend.profile and friend.profile.avatar %}
+                                    <img src="{{ friend.profile.avatar.url }}"
                                          alt="{{ friend.username }}"
                                          class="w-12 h-12 rounded-full object-cover">
                                 {% else %}
@@ -93,8 +93,8 @@
                                 {% endif %}
                                 <div>
                                     <p class="font-semibold">{{ friend.username }}</p>
-                                    {% if friend.userprofile and friend.userprofile.bio %}
-                                        <p class="text-sm text-gray-500">{{ friend.userprofile.bio|truncatechars:50 }}</p>
+                                    {% if friend.profile and friend.profile.bio %}
+                                        <p class="text-sm text-gray-500">{{ friend.profile.bio|truncatechars:50 }}</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -121,8 +121,8 @@
                         {% for item in pending_users_with_requests %}
                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                 <div class="flex items-center gap-4">
-                                    {% if item.user.userprofile and item.user.userprofile.avatar %}
-                                        <img src="{{ item.user.userprofile.avatar.url }}"
+                                    {% if item.user.profile and item.user.profile.avatar %}
+                                        <img src="{{ item.user.profile.avatar.url }}"
                                              alt="{{ item.user.username }}"
                                              class="w-12 h-12 rounded-full object-cover">
                                     {% else %}
@@ -134,8 +134,8 @@
                                     {% endif %}
                                     <div>
                                         <p class="font-semibold">{{ item.user.username }}</p>
-                                        {% if item.user.userprofile and item.user.userprofile.bio %}
-                                            <p class="text-sm text-gray-500">{{ item.user.userprofile.bio|truncatechars:50 }}</p>
+                                        {% if item.user.profile and item.user.profile.bio %}
+                                            <p class="text-sm text-gray-500">{{ item.user.profile.bio|truncatechars:50 }}</p>
                                         {% endif %}
                                         {% if item.sent_by_current_user %}
                                             <p class="text-sm text-gray-500">Wysłano zaproszenie</p>
@@ -167,8 +167,8 @@
                         {% for item in suggested_users_with_requests %}
                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                 <div class="flex items-center gap-4">
-                                    {% if item.user.userprofile and item.user.userprofile.avatar %}
-                                        <img src="{{ item.user.userprofile.avatar.url }}"
+                                    {% if item.user.profile and item.user.profile.avatar %}
+                                        <img src="{{ item.user.profile.avatar.url }}"
                                              alt="{{ item.user.username }}"
                                              class="w-12 h-12 rounded-full object-cover">
                                     {% else %}
@@ -180,8 +180,8 @@
                                     {% endif %}
                                     <div>
                                         <p class="font-semibold">{{ item.user.username }}</p>
-                                        {% if item.user.userprofile and item.user.userprofile.bio %}
-                                            <p class="text-sm text-gray-500">{{ item.user.userprofile.bio|truncatechars:50 }}</p>
+                                        {% if item.user.profile and item.user.profile.bio %}
+                                            <p class="text-sm text-gray-500">{{ item.user.profile.bio|truncatechars:50 }}</p>
                                         {% endif %}
                                     </div>
                                 </div>
