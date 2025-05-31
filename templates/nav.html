@@ -61,10 +61,12 @@
                 <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Strona
                     główna</a>
                 <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Publikacje</a>
+                {% if user.is_authenticated %} 
                 <a href="{% url 'friends_list' %}"
                    class="text-gray-700 hover:text-blue-600 text-sm font-medium">Znajomi</a>
                 <a href="{% url 'followed_articles' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Polubione
                     artykuły</a>
+                {% endif %}
 
                 <!-- Przycisk do wyszukiwania -->
                 <form action="{% url 'search' %}" method="get" class="flex items-center space-x-2">
