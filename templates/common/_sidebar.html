@@ -46,22 +46,63 @@
 {% endif %}
 
 
-<!-- Sekcja "Who to follow" - domyślnie statyczna -->
-<!-- W przyszłości może być dynamiczna na podstawie modelu użytkowników -->
-<div class="bg-white p-4 rounded-md shadow mt-6">
-    <h3 class="font-semibold mb-2">Proponowani znajomi</h3>
-    <ul class="space-y-2">
-        <li class="flex justify-between items-center">
-            <span>Oktawia Wiczlińska</span>
-            <button class="text-blue-600 text-sm">Follow</button>
-        </li>
-        <li class="flex justify-between items-center">
-            <span>Arkadiusz Wawrzyzniak</span>
-            <button class="text-blue-600 text-sm">Follow</button>
-        </li>
-        <li class="flex justify-between items-center">
-            <span>Michał Guzikiewicz</span>
-            <button class="text-blue-600 text-sm">Follow</button>
-        </li>
-    </ul>
+{#proponowani znajomi nie będą się pokazywać w zakładce Znajomi oraz Artykułu #}
+{% if request.resolver_match.url_name != 'friends_list' and request.resolver_match.url_name != 'my_articles' and request.resolver_match.url_name != 'profile_detail' %}
+
+<!-- Sekcja Proponowanych Znajomych -->
+<div class="bg-white p-4 rounded-md shadow">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Proponowani znajomi</h3>
+
+    {% if user.is_authenticated %}
+        {% if suggested_users_with_requests %}
+            <div class="space-y-4">
+                {% for item in suggested_users_with_requests %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            {% if item.user.userprofile and item.user.userprofile.avatar %}
+                                <img src="{{ item.user.userprofile.avatar.url }}"
+                                     alt="{{ item.user.username }}"
+                                     class="w-10 h-10 rounded-full object-cover">
+                            {% else %}
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <span class="text-blue-600 text-sm font-semibold">
+                                        {{ item.user.username|make_list|first|upper }}
+                                    </span>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ item.user.username }}
+                                </p>
+                                {% if item.user.userprofile and item.user.userprofile.bio %}
+                                    <p class="text-xs text-gray-500">{{ item.user.userprofile.bio|truncatechars:40 }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="ml-2">
+                            {% if item.request_exists %}
+                                <span class="text-gray-500 italic text-xs">Oczekuje</span>
+                            {% else %}
+                                <form method="POST" action="{% url 'send_friend_request' user_id=item.user.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-1 px-3 rounded-md transition">
+                                        Dodaj
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-sm text-gray-600">Brak sugerowanych użytkowników.</p>
+        {% endif %}
+    {% else %}
+        <p class="text-sm text-gray-600">Zaloguj się, aby zobaczyć sugerowanych użytkowników.</p>
+    {% endif %}
 </div>
+{% endif %}
+
+
+
