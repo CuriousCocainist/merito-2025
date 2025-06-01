@@ -1,43 +1,27 @@
 {% load static %}
 
-{# Panel boczny użytkownika lub gościa #}
+{# Panel boczny – sekcja aktywności użytkownika #}
 {% if user.is_authenticated %}
-    <!-- Sekcja dla zalogowanego użytkownika -->
     <div class="bg-white p-4 rounded-md shadow">
         <h3 class="font-semibold text-gray-900 mb-2">Twoja aktywność</h3>
         <p class="text-sm text-gray-600 mb-4">Zarządzaj swoimi publikacjami lub zobacz ulubione artykuły.</p>
-
         <ul class="space-y-2 text-sm">
-            <!-- Link do formularza dodawania artykułu -->
             <li class="block rounded-md bg-blue-100 px-3 py-2 text-base font-medium text-blue-700">
-                <a href="{% url 'add_article' %}">
-                    Dodaj nowy artykuł
-                </a>
+                <a href="{% url 'add_article' %}">Dodaj nowy artykuł</a>
             </li>
-
-            <!-- Link do widoku własnych artykułów -->
             <li class="block rounded-md bg-gray-100 px-3 py-2 text-base font-medium text-gray-700">
-                <a href="{% url 'my_articles' %}">
-                    Moje artykuły
-                </a>
+                <a href="{% url 'my_articles' %}">Moje artykuły</a>
             </li>
-
             <li class="block rounded-md bg-gray-100 px-3 py-2 text-base font-medium text-gray-700">
-                <a href="{% url 'followed_articles' %}">
-                    Obserwowane artykuły
-                </a>
+                <a href="{% url 'followed_articles' %}">Obserwowane artykuły</a>
             </li>
         </ul>
     </div>
-
 {% else %}
-    <!-- Sekcja dla niezalogowanego użytkownika -->
+    {# Sekcja dla gościa – zachęta do logowania #}
     <div class="bg-white p-4 rounded-md shadow">
         <h3 class="font-semibold text-gray-900 mb-2">Dołącz do nas</h3>
-        <p class="text-sm text-gray-600">
-            Zaloguj się, aby publikować własne treści i komentować innych użytkowników.
-        </p>
-        <!-- Przycisk logowania -->
+        <p class="text-sm text-gray-600">Zaloguj się, aby publikować własne treści i komentować innych użytkowników.</p>
         <a href="{% url 'login' %}"
            class="mt-3 inline-block bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-md py-2 px-4 text-sm">
             🔐 Zaloguj się
@@ -45,64 +29,61 @@
     </div>
 {% endif %}
 
-
-{#proponowani znajomi nie będą się pokazywać w zakładce Znajomi oraz Artykułu #}
+{# Wykluczamy wyświetlanie sekcji proponowanych znajomych na podstronach znajomych, profilu, własnych artykułów #}
 {% if request.resolver_match.url_name != 'friends_list' and request.resolver_match.url_name != 'my_articles' and request.resolver_match.url_name != 'profile_detail' %}
-
-<!-- Sekcja Proponowanych Znajomych -->
-<div class="bg-white p-4 rounded-md shadow">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Proponowani znajomi</h3>
-
-    {% if user.is_authenticated %}
-        {% if suggested_users_with_requests %}
-            <div class="space-y-4">
-                {% for item in suggested_users_with_requests %}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div class="flex items-center gap-3">
-                            {% if item.user.userprofile and item.user.userprofile.avatar %}
-                                <img src="{{ item.user.userprofile.avatar.url }}"
-                                     alt="{{ item.user.username }}"
-                                     class="w-10 h-10 rounded-full object-cover">
-                            {% else %}
-                                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <span class="text-blue-600 text-sm font-semibold">
-                                        {{ item.user.username|make_list|first|upper }}
-                                    </span>
+    <div class="bg-white p-4 rounded-md shadow mt-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Proponowani znajomi</h3>
+        {% if user.is_authenticated %}
+            {% if suggested_users_with_requests %}
+                <div class="space-y-4">
+                    {% for item in suggested_users_with_requests %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                {# Avatar użytkownika lub inicjał #}
+                                {% if item.user.userprofile and item.user.userprofile.avatar %}
+                                    <img src="{{ item.user.userprofile.avatar.url }}" alt="{{ item.user.username }}"
+                                         class="w-10 h-10 rounded-full object-cover">
+                                {% else %}
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <span class="text-blue-600 text-sm font-semibold">{{ item.user.username|make_list|first|upper }}</span>
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ item.user.username }}</p>
+                                    {% if item.user.userprofile and item.user.userprofile.bio %}
+                                        <p class="text-xs text-gray-500">{{ item.user.userprofile.bio|truncatechars:40 }}</p>
+                                    {% endif %}
                                 </div>
-                            {% endif %}
-                            <div>
-                                <p class="text-sm font-medium text-gray-900">
-                                    {{ item.user.username }}
-                                </p>
-                                {% if item.user.userprofile and item.user.userprofile.bio %}
-                                    <p class="text-xs text-gray-500">{{ item.user.userprofile.bio|truncatechars:40 }}</p>
+                            </div>
+
+                            <div class="ml-2">
+                                {# Jeśli zaproszenie już istnieje – pokaż status + anuluj #}
+                                {% if item.request_exists %}
+                                    <div class="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                        <span class="text-gray-500 italic text-xs">Oczekuje na potwierdzenie</span>
+                                        <button class="cancel-request-btn text-red-600 text-xs underline"
+                                                data-user-id="{{ item.user.id }}" data-csrf-token="{{ csrf_token }}">
+                                            Anuluj zaproszenie
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    {# Jeśli brak zaproszenia – pokaż przycisk dodania #}
+                                    <button class="send-request-btn bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-1 px-3 rounded-md transition"
+                                            data-user-id="{{ item.user.id }}" data-csrf-token="{{ csrf_token }}">
+                                        Dodaj do znajomych
+                                    </button>
                                 {% endif %}
                             </div>
                         </div>
-                        <div class="ml-2">
-                            {% if item.request_exists %}
-                                <span class="text-gray-500 italic text-xs">Oczekuje</span>
-                            {% else %}
-                                <form method="POST" action="{% url 'send_friend_request' user_id=item.user.id %}">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-1 px-3 rounded-md transition">
-                                        Dodaj
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-sm text-gray-600">Brak sugerowanych użytkowników.</p>
+            {% endif %}
         {% else %}
-            <p class="text-sm text-gray-600">Brak sugerowanych użytkowników.</p>
+            <p class="text-sm text-gray-600">Zaloguj się, aby zobaczyć sugerowanych użytkowników.</p>
         {% endif %}
-    {% else %}
-        <p class="text-sm text-gray-600">Zaloguj się, aby zobaczyć sugerowanych użytkowników.</p>
-    {% endif %}
-</div>
+    </div>
+
+
 {% endif %}
-
-
-

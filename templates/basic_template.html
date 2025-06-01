@@ -7,68 +7,87 @@
     <link rel="stylesheet" type="text/css" href="{% static 'css/tailwind.css' %}">
     <title>Nawigacja</title>
 </head>
-<body class="bg-white">
+<body class="bg-white relative z-0">
 <!-- Pasek nawigacyjny -->
 {% include 'nav.html' %}
 <main class="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 gap-6 {% if is_grid_cols_1 %}grid-cols-1{% else %}grid-cols-1 lg:grid-cols-3{% endif %}">
     {% block content %}{% endblock %}
     <aside class="space-y-6">
-    {% block sidebar %}
-    {% endblock %}
+        {% block sidebar %}
+        {% endblock %}
     </aside>
 </main>
 {% include 'footer.html' %}
 
-    <!-- TEST: To jest szablon bazowy -->
+<!-- TEST: To jest szablon bazowy -->
 
-    {% if messages %} <!-- jeśli nie ma pliku do pobrania, to wyskakuje okienko z taką informacją -->
-        <div id="message-popup" class="fixed inset-0 flex items-center justify-center z-50">
-            <div class="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded shadow-md text-center max-w-md">
-                {% for message in messages %}
-                    <p>{{ message }}</p>
-                {% endfor %}
-            </div>
+{% if messages %} <!-- jeśli nie ma pliku do pobrania, to wyskakuje okienko z taką informacją -->
+    <div id="message-popup" class="fixed inset-0 flex items-center justify-center z-50">
+        <div class="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded shadow-md text-center max-w-md">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
         </div>
+    </div>
 
-        <script>
-            setTimeout(() => {
-                const popup = document.getElementById('message-popup');
-                if (popup) popup.style.display = 'none';
-            }, 3000); // okienko znika po 3 sekundach
-        </script>
-    {% endif %}
+    <script>
+        setTimeout(() => {
+            const popup = document.getElementById('message-popup');
+            if (popup) popup.style.display = 'none';
+        }, 3000); // okienko znika po 3 sekundach
+    </script>
+{% endif %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.like-toggle').forEach(button => {
-        button.addEventListener('click', function () {
-            const articleId = this.dataset.articleId;
-            const liked = this.dataset.liked === 'true';
-            const url = liked ? `/unlike/${articleId}/` : `/like/${articleId}/`;
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.like-toggle').forEach(button => {
+            button.addEventListener('click', function () {
+                const articleId = this.dataset.articleId;
+                const liked = this.dataset.liked === 'true';
+                const url = liked ? `/unlike/${articleId}/` : `/like/${articleId}/`;
 
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Accept': 'application/json',
-                },
-            })
-                .then(response => response.json())
-                .then(data => {
-                    this.dataset.liked = data.liked.toString();
-                    this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub';
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.dataset.liked = data.liked.toString();
+                        this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub';
 
-                    //  aktualizacja liczby polubień (serc)
-                    const heartSpan = this.parentElement.querySelector('span');
-                    if (heartSpan) {
-                        heartSpan.textContent = `${data.like_count}❤️`;
-                    }
-                });
+                        //  aktualizacja liczby polubień (serc)
+                        const heartSpan = this.parentElement.querySelector('span');
+                        if (heartSpan) {
+                            heartSpan.textContent = `${data.like_count}❤️`;
+                        }
+                    });
+            });
         });
-    });
-})
+    })
+
+
+</script>
+<script>
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.innerText = message;
+        toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg text-white text-sm font-semibold ${
+            type === 'success' ? 'bg-green-600' : 'bg-red-600'
+        }`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
 </script>
 
 
+{% block script %}{% endblock %}
+
 </body>
 </html>
+
+
