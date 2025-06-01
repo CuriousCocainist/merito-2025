@@ -44,12 +44,34 @@ def get_article_related_details(request, article):
         article.followed_by_user = False
 
 def index_page(request):
+    suggested_users_with_requests = []  # Domyślnie pusta lista
+
     if request.user.is_authenticated:
         # Szukamy wszystkich zaakceptowanych znajomości w obie strony
         accepted_friendships = FriendshipModel.objects.filter(
             Q(user=request.user) | Q(friend=request.user),
             status='accepted'
         )
+
+        # Pobranie zaakceptowanych znajomych
+        friends = User.objects.filter(
+            Q(friend_requests_received__user=request.user, friend_requests_received__status='accepted') |
+            Q(friend_requests_sent__friend=request.user, friend_requests_sent__status='accepted')
+        ).distinct()
+
+        # ====== DODANE: sugerowani użytkownicy ======
+        related_ids = set(friends.values_list('id', flat=True))
+        related_ids.update(FriendshipModel.objects.filter(user=request.user).values_list('friend_id', flat=True))
+        related_ids.update(FriendshipModel.objects.filter(friend=request.user).values_list('user_id', flat=True))
+        related_ids.add(request.user.id)
+
+        suggested_users = User.objects.exclude(id__in=related_ids)[:5]
+        for user in suggested_users:
+            suggested_users_with_requests.append({
+                'user': user,
+                'request_exists': False,
+            })
+        # ====== KONIEC DODANEGO BLOKU ======
 
         # Wyciągamy ID znajomych
         friend_ids = set()
@@ -81,10 +103,7 @@ def index_page(request):
     # Dla każdego artykułu na liście, liczy ile polubień i komentarzy ma artykuł
     # oraz sprawdza, czy zalogowany użytkownik polubił dany artykuł
     for article in page_obj:
-        # Zliczanie polubień dla każdego artykułu
         article.like_count = Interaction.objects.filter(article=article, type='like').count()
-
-        # Zliczanie komentarzy dla każdego artykułu
         article.comment_count = Interaction.objects.filter(article=article, type='comment').count()
 
         get_article_related_details(
@@ -95,10 +114,12 @@ def index_page(request):
     # Przygotowanie kontekstu do przekazania do szablonu
     context = {
         'page_obj': page_obj,
+        'suggested_users_with_requests': suggested_users_with_requests,  # DODANE DO KONTEKSTU
     }
 
     # Renderowanie strony wykorzystując szablon 'main.html' i przygotowany kontekst
     return render(request, 'main.html', context)
+
 
 def article_page(request, article_id): # widok pojedynczego artykułu
     article = get_object_or_404(Article, id=article_id)
