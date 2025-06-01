@@ -19,14 +19,16 @@
 </main>
 {% include 'footer.html' %}
 
-    {% if messages %} <!-- jeśli nie ma pliku do pobrania, to wyskakuje okienko z taką informacją -->
-        <div id="message-popup" class="fixed inset-0 flex items-center justify-center z-50">
-            <div class="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded shadow-md text-center max-w-md">
-                {% for message in messages %}
-                    <p>{{ message }}</p>
-                {% endfor %}
-            </div>
+<!-- TEST: To jest szablon bazowy -->
+
+{% if messages %} <!-- jeśli nie ma pliku do pobrania, to wyskakuje okienko z taką informacją -->
+    <div id="message-popup" class="fixed inset-0 flex items-center justify-center z-50">
+        <div class="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded shadow-md text-center max-w-md">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
         </div>
+    </div>
 
         <script>
             setTimeout(() => {
@@ -37,111 +39,53 @@
     {% endif %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.like-toggle').forEach(button => {
+            button.addEventListener('click', function () {
+                const articleId = this.dataset.articleId;
+                const liked = this.dataset.liked === 'true';
+                const url = liked ? `/unlike/${articleId}/` : `/like/${articleId}/`;
 
-    const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.dataset.liked = data.liked.toString();
+                        this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub';
 
-    // Obsługa przycisku "Lubię to"
-    document.querySelectorAll('.like-toggle').forEach(button => {
-        button.addEventListener('click', function () {
-            const articleId = this.dataset.articleId;
-            const liked = this.dataset.liked === 'true';
-            const url = liked ? `/unlike/${articleId}/` : `/like/${articleId}/`;
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken, // Przekazuje token CSRF
-                    'Accept': 'application/json',
-                },
-            })
-                .then(response => response.json())
-                .then(data => {
-                    this.dataset.liked = data.liked.toString();
-                    this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub';
-
-                    //  aktualizacja liczby polubień (serc)
-                    const likeInfo = this.parentElement.querySelector('.like-info');
-                    if (likeInfo) {
-                        const countSpan = likeInfo.querySelector('.like-count');
-                        if (countSpan) {
-                            countSpan.textContent = data.like_count;
+                        //  aktualizacja liczby polubień (serc)
+                        const heartSpan = this.parentElement.querySelector('span');
+                        if (heartSpan) {
+                            heartSpan.textContent = `${data.like_count}❤️`;
                         }
-                        // Zmienia kolor wypełnienia ikony serca
-                        const heartIcon = likeInfo.querySelector('.heart-icon');
-                        if (heartIcon) {
-                            if (data.liked) {
-                                heartIcon.setAttribute('fill', 'red');
-                                heartIcon.setAttribute('stroke', 'red');
-                            } else {
-                                heartIcon.setAttribute('fill', 'none');
-                                heartIcon.setAttribute('stroke', 'currentColor');
-                            }
-                        }
-                    }
-                });
+                    });
+            });
         });
-    });
+    })
 
-    // Obsługa przycisku "Obserwuj"
-    document.querySelectorAll('.follow-toggle').forEach(function (button) {
-        button.addEventListener('click', function () {
-            const articleId = this.dataset.articleId;
-            const followed = this.dataset.followed === 'true';
-            const url = followed ? this.dataset.unfollowUrl : this.dataset.followUrl;
-            const label = this.querySelector(".follow-label");
-            const icon = this.querySelector("svg");
 
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    'article_id': articleId // przekazujemy ID artykułu
-                }),
-            })
-                .then(response => response.json())
-                .then(data => {
-                    this.dataset.followed = data.followed.toString(); // Zmieniamy status w atrybucie data-followed
-                    if (label) {
-                        label.textContent = data.followed ? 'Nie obserwuj' : 'Obserwuj';
-
-                        const articleCard = button.closest('.article-card');
-                        if (articleCard) {
-                            articleCard.remove();
-
-                            // Sprawdź, czy nie zostały żadne artykuły
-                            const remainingCards = document.querySelectorAll('.article-card');
-                            if (remainingCards.length === 0) {
-                                const section = document.querySelector('section.lg\\:col-span-2');
-                                if (section) {
-                                    const emptyMessage = document.createElement('p');
-                                    emptyMessage.textContent = 'Nie obserwujesz żadnego artykułu. Kliknij obserwuj 🔔 na wybranym artykule, aby go tutaj zobaczyć.';
-                                    emptyMessage.classList.add('mt-4', 'text-gray-600'); // opcjonalne style
-                                    section.appendChild(emptyMessage);
-                                }
-                            }
-                        }
-                    }
-                    if (icon) {
-                        // Zmiana koloru wypełnienia ikony na złoto, gdy artykuł jest obserwowany
-                        if (data.followed) {
-                            icon.setAttribute('stroke', '#FFD700');  // Złoty kolor ikony
-                            icon.setAttribute('fill', '#FFD700');    // Złote wypełnienie
-                        } else {
-                            icon.setAttribute('stroke', 'currentColor');  // Zmieniamy na domyślny kolor
-                            icon.setAttribute('fill', 'none');
-                        }
-                    }
-                });
-        });
-    });
-});
+</script>
+<script>
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.innerText = message;
+        toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg text-white text-sm font-semibold ${
+            type === 'success' ? 'bg-green-600' : 'bg-red-600'
+        }`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
 </script>
 
-<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+{% block script %}{% endblock %}
 
 </body>
 </html>

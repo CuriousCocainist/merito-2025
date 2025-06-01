@@ -19,6 +19,8 @@ from django.core.mail import send_mail # Dodano import send_mail
 from django.urls import reverse # Dodano import reverse
 from django.contrib.sites.shortcuts import get_current_site # Dodano import get_current_site
 from django.conf import settings # Dodano import settings
+from django.views.decorators.http import require_POST
+from django.contrib import messages
 from django.http import JsonResponse
 
 User = get_user_model() # Pobranie modelu User
@@ -71,6 +73,7 @@ def index_page(request):
                 'user': user,
                 'request_exists': False,
             })
+
         # ====== KONIEC DODANEGO BLOKU ======
 
         # Wyciągamy ID znajomych
@@ -136,7 +139,7 @@ def article_page(request, article_id): # widok pojedynczego artykułu
     comments = Interaction.objects.filter(article=article, type='comment').order_by('created_at')
     comment_form = CommentForm()
     like_count = Interaction.objects.filter(article=article, type='like').count()
-    
+
     context = {
         'article': article,
         'comment_form': comment_form,
@@ -486,29 +489,80 @@ def user_profile_view(request, user_id):  # Stworzenie funkcji user_profile_view
 
     return render(request, 'user_profile.html', context)
 
+from django.http import JsonResponse
+
 @login_required
 def send_friend_request(request, user_id):
     friend = get_object_or_404(User, id=user_id)
 
-    # Sprawdzenie czy nie wysyłamy zaproszenia do samego siebie
+    # Blokujemy wysyłanie zaproszenia do siebie
     if friend == request.user:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'message': 'Nie możesz wysłać zaproszenia do siebie'})
         messages.error(request, "Nie możesz wysłać zaproszenia do samego siebie.")
         return redirect('user_profile_view', user_id=friend.id)
 
+    # Szukamy istniejącej relacji
     friendship = FriendshipModel.objects.filter(user=request.user, friend=friend).first()
 
     if friendship:
+        # Jeśli wcześniej odrzucono, zmień na "oczekujące"
         if friendship.status == 'declined':
             friendship.status = 'pending'
             friendship.save()
-            messages.success(request, f"Wysłano ponownie zaproszenie do {friend.username}")
+            msg = f"Wysłano ponownie zaproszenie do {friend.username}"
+            status = 'ok'
         else:
-            messages.info(request, f"Zaproszenie do {friend.username} już istnieje")
+            msg = f"Zaproszenie do {friend.username} już istnieje"
+            status = 'exists'
     else:
+        # Tworzymy nową relację
         FriendshipModel.objects.create(user=request.user, friend=friend, status='pending')
-        messages.success(request, f"Wysłano zaproszenie do {friend.username}")
+        msg = f"Wysłano zaproszenie do {friend.username}"
+        status = 'ok'
 
+    # Jeśli zapytanie jest AJAX-owe — zwróć JSON (nie przekierowuj)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': status, 'message': msg})
+
+    # Dla zwykłych żądań — użyj wiadomości i przekierowania
+    messages.success(request, msg)
     return redirect('friends_list')
+
+
+
+
+@login_required
+@require_POST
+def cancel_friend_request(request, user_id):
+    friend = get_object_or_404(User, id=user_id)
+
+    # Szukamy zaproszenia wysłanego przez aktualnego użytkownika
+    friendship = FriendshipModel.objects.filter(user=request.user, friend=friend, status='pending').first()
+
+    if friendship:
+        friendship.delete()
+
+        # Treść komunikatu
+        msg = f"Anulowano zaproszenie do {friend.username}"
+
+        # Jeśli zapytanie jest AJAX-owe — zwróć JSON
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'ok', 'message': msg})
+
+        # Jeśli nie — pokaż wiadomość i przekieruj
+        messages.success(request, msg)
+        return redirect('friends_list')
+
+    error_msg = "Nie znaleziono zaproszenia"
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'error', 'message': error_msg})
+
+    messages.error(request, error_msg)
+    return redirect('friends_list')
+
+
+
 
 
 @login_required
@@ -559,32 +613,35 @@ def friends_list_view(request):
         'friends': friends,
         'suggested_users': suggested_users,
     })
-@login_required
+@login_required  # Tylko zalogowany użytkownik może wywołać ten widok
 def friends_list(request):
-    # Pobranie zaakceptowanych znajomych
+    # Pobranie użytkowników, z którymi aktualny użytkownik ma zaakceptowaną relację (w obie strony)
     friends = User.objects.filter(
         Q(friend_requests_received__user=request.user, friend_requests_received__status='accepted') |
         Q(friend_requests_sent__friend=request.user, friend_requests_sent__status='accepted')
     ).distinct()
 
-    # Pobranie oczekujących zaproszeń dla zalogowanego użytkownika (jako odbiorca)
+    # Pobranie zaproszeń do znajomych, które aktualny użytkownik otrzymał, ale jeszcze nie zaakceptował
     pending_requests = FriendshipModel.objects.filter(friend=request.user, status='pending')
-    pending_requests_count = pending_requests.count()
+    pending_requests_count = pending_requests.count()  # Liczba takich zaproszeń
 
-    # Pobranie użytkowników z relacją pending (wysłane lub otrzymane zaproszenia)
+    # Pobranie wszystkich relacji, które mają status 'pending' — zarówno wysłanych, jak i otrzymanych
     all_pending_requests = FriendshipModel.objects.filter(
         Q(user=request.user, status='pending') | Q(friend=request.user, status='pending')
     )
 
-    # Tworzenie listy użytkowników z oczekującymi zaproszeniami (wysłane lub otrzymane)
+    # Stworzenie listy słowników opisujących oczekujące zaproszenia z dodatkową informacją, kto je wysłał
     pending_users_with_requests = []
     for friendship in all_pending_requests:
-        if friendship.user == request.user:  # Zalogowany użytkownik wysłał zaproszenie
+        if friendship.user == request.user:
+            # Zalogowany użytkownik wysłał zaproszenie
             user = friendship.friend
             sent_by_current_user = True
-        else:  # Zalogowany użytkownik otrzymał zaproszenie
+        else:
+            # Zalogowany użytkownik otrzymał zaproszenie
             user = friendship.user
             sent_by_current_user = False
+
         pending_users_with_requests.append({
             'user': user,
             'request_exists': True,
@@ -592,35 +649,40 @@ def friends_list(request):
             'request_id': friendship.id,
         })
 
-    # Usunięcie duplikatów z listy pending
+    # Usunięcie duplikatów z listy oczekujących zaproszeń (np. w przypadku kilku relacji z tym samym użytkownikiem)
     seen_user_ids = set()
     unique_pending_users = []
     for item in pending_users_with_requests:
         if item['user'].id not in seen_user_ids:
             seen_user_ids.add(item['user'].id)
             unique_pending_users.append(item)
-    pending_users_with_requests = unique_pending_users[:10]
 
-    # Pobranie użytkowników bez żadnych relacji (ani pending, ani accepted)
+    pending_users_with_requests = unique_pending_users[:10]  # Ograniczenie do 10 użytkowników
+
+    # Zbiór ID wszystkich użytkowników, z którymi aktualny użytkownik ma jakąkolwiek relację
     all_related_ids = set()
-    all_related_ids.update(friend.id for friend in friends)
+    all_related_ids.update(friend.id for friend in friends)  # ID zaakceptowanych znajomych
     pending_sent_ids = FriendshipModel.objects.filter(user=request.user, status='pending').values_list('friend_id', flat=True)
     pending_received_ids = FriendshipModel.objects.filter(friend=request.user, status='pending').values_list('user_id', flat=True)
-    all_related_ids.update(pending_sent_ids)
-    all_related_ids.update(pending_received_ids)
-    all_related_ids.add(request.user.id)
+    all_related_ids.update(pending_sent_ids)  # ID użytkowników, do których wysłano zaproszenia
+    all_related_ids.update(pending_received_ids)  # ID użytkowników, od których otrzymano zaproszenia
+    all_related_ids.add(request.user.id)  # ID samego siebie
 
-    # Pobranie sugerowanych użytkowników (bez żadnych relacji)
+    # Pobranie użytkowników, którzy nie mają żadnej relacji z aktualnym użytkownikiem
     suggested_users = User.objects.exclude(id__in=all_related_ids)[:10]
 
-    # Tworzenie listy sugerowanych użytkowników
+    # Utworzenie listy słowników opisujących sugerowanych użytkowników wraz z informacjami o ich profilach
     suggested_users_with_requests = []
     for user in suggested_users:
+        profile = UserProfile.objects.filter(user=user).first()
         suggested_users_with_requests.append({
             'user': user,
             'request_exists': False,
+            'bio': profile.bio if profile and profile.bio else '',
+            'avatar_url': profile.avatar.url if profile and profile.avatar else None,
         })
 
+    # Kontekst przekazywany do szablonu HTML
     context = {
         'friends': friends,
         'pending_requests': pending_requests,
@@ -628,6 +690,8 @@ def friends_list(request):
         'suggested_users_with_requests': suggested_users_with_requests,
         'pending_requests_count': pending_requests_count,
     }
+
+    # Renderowanie widoku friends_list.html z przekazanym kontekstem
     return render(request, 'friends_list.html', context)
 
 @login_required
