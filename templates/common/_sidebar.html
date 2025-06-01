@@ -87,3 +87,87 @@
 
 
 {% endif %}
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function sendFriendRequest(userId, csrfToken, buttonEl) {
+            fetch(`/send-request/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok' || data.status === 'exists') {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'flex flex-col sm:flex-row sm:items-center sm:gap-2';
+
+                        const statusText = document.createElement('span');
+                        statusText.className = 'text-gray-500 italic text-xs';
+                        statusText.innerText = 'Oczekuje na potwierdzenie';
+
+                        const cancelBtn = document.createElement('button');
+                        cancelBtn.className = 'cancel-request-btn text-red-600 text-xs underline';
+                        cancelBtn.dataset.userId = userId;
+                        cancelBtn.dataset.csrfToken = csrfToken;
+                        cancelBtn.innerText = 'Anuluj zaproszenie';
+
+                        wrapper.appendChild(statusText);
+                        wrapper.appendChild(cancelBtn);
+                        buttonEl.parentNode.replaceChild(wrapper, buttonEl);
+
+                        cancelBtn.addEventListener('click', cancelHandler);
+                    } else {
+                        alert(data.message || 'Wystąpił błąd podczas wysyłania zaproszenia.');
+                    }
+                });
+        }
+
+        function cancelHandler() {
+            const userId = this.dataset.userId;
+            const csrfToken = this.dataset.csrfToken;
+            const buttonEl = this;
+
+            fetch(`/cancel-request/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const addBtn = document.createElement('button');
+                        addBtn.className = 'send-request-btn bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-1 px-3 rounded-md transition';
+                        addBtn.dataset.userId = userId;
+                        addBtn.dataset.csrfToken = csrfToken;
+                        addBtn.innerText = 'Dodaj do znajomych';
+
+                        buttonEl.parentNode.parentNode.replaceChild(addBtn, buttonEl.parentNode);
+
+                        addBtn.addEventListener('click', function () {
+                            sendFriendRequest(userId, csrfToken, addBtn);
+                        });
+                    } else {
+                        alert(data.message || 'Nie udało się anulować zaproszenia.');
+                    }
+                });
+        }
+
+        document.querySelectorAll('.send-request-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                const userId = this.dataset.userId;
+                const csrfToken = this.dataset.csrfToken;
+                sendFriendRequest(userId, csrfToken, this);
+            });
+        });
+
+        document.querySelectorAll('.cancel-request-btn').forEach(button => {
+            button.addEventListener('click', cancelHandler);
+        });
+    });
+</script>
