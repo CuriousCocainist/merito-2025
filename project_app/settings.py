@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'app_scinet',
-    'django_social_share'
+    'django_social_share' # Biblioteka ułatwiająca dzielenie się treściami w mediach społecznościowych - https://github.com/fcurella/django-social-share?tab=readme-ov-file
 ]
 
 MIDDLEWARE = [

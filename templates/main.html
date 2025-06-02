@@ -115,7 +115,7 @@
                             {% if article.liked_by_user %}Lubisz to{% else %}Polub to{% endif %}
                             </span>
                         </button>
-
+                        <!-- Link do dodawania komentarzy -->
                         <a href="{% url 'article' article.id %}#komentarze"
                            class="text-blue-600 hover:underline flex items-center gap-1">
                             <span class="text-base">
@@ -131,6 +131,7 @@
                                 {% endif %}
                             </span>
                         </a>
+                        <!-- Przycisk do udostępniania w mediach społecznościowych -->
                         <div class="relative" id="share-dropdown-container-{{ article.id }}">
                             <button type="button"
                                 onclick="toggleShareDropdown({{ article.id }})"
@@ -143,6 +144,7 @@
                                 </svg>
                                 <span>Podziel się</span>
                             </button>
+                            <!-- Opcje serwisów do udostępniania - https://github.com/fcurella/django-social-share?tab=readme-ov-file -->
                             <div class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-10"
                                  id="share-dropdown-{{ article.id }}">
                                 <ul class="py-1 text-sm text-gray-700">
@@ -158,6 +160,7 @@
                                 </ul>
                             </div>
                         </div>
+                        <!-- Skrypt obsługujący rozwijaną listę serwisów do dzielenia się treścią -->
                         <script>
                         function toggleShareDropdown(id) {
                             const dropdown = document.getElementById(`share-dropdown-${id}`);
