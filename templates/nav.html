@@ -67,6 +67,12 @@
                 <a href="{% url 'followed_articles' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Obserwowane
                     artykuły</a>
                 {% endif %}
+            {% if user.is_authenticated %}
+            {% load chat_nav_tags %}
+
+{% show_unread_messages_icon %}
+                {% endif %}
+
 
                 <!-- Przycisk do wyszukiwania -->
                 <form action="{% url 'search' %}" method="get" class="flex items-center space-x-2">

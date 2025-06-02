@@ -1,0 +1,26 @@
+{% extends "basic_template.html" %}
+{% load static %}
+
+{% block title %}Konwersacje{% endblock %}
+
+{% block sidebar %}
+    {% include "common/_sidebar.html" %}
+{% endblock %}
+{% block content %}
+    <section class="lg:col-span-2 space-y-6">
+    <h2 class="text-xl font-semibold mb-4">Twoje konwersacje</h2>
+    <div class="space-y-4">
+        {% for item in conversations %}
+    {% with convo=item.conversation other_user=item.other_user %}
+        <a href="{% url 'conversation' other_user.id %}"
+           class="block p-4 bg-white border rounded shadow hover:bg-blue-50">
+            <div class="font-medium text-gray-800">{{ other_user.username }}</div>
+        </a>
+    {% endwith %}
+{% endfor %}
+        {% if not conversations %}
+            <p class="text-gray-500">Brak konwersacji.</p>
+        {% endif %}
+    </div>
+    </section>
+{% endblock %}
