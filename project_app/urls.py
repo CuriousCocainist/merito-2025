@@ -2,25 +2,17 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-
-# Importujesz istniejące widoki
-from app_scinet.views.front_pages_view import (
-    index_page, article_page, article_page_p, login_page, user_register_page,
-    logout_page, like_article, unlike_article, comment_article, add_article,
-    edit_profile, profile_view, edit_article, delete_article, my_articles,
-    password_reset_request_view, password_reset_confirm_view, password_reset_complete_view,
-    cancel_friend_request,conversation_view, conversation_list_view,
-)
-
-# Importujesz widok zmiany hasła
 from app_scinet import change_password
 from app_scinet.download_view import download_article_file as scinet_download_article_file
-from app_scinet.views.front_pages_view import (index_page, article_page, article_page_p, login_page, user_register_page, \
+from app_scinet.views.front_pages_view import (index_page, article_page, article_page_p, login_page, user_register_page,
                                                logout_page, like_article, unlike_article, comment_article, add_article,
                                                edit_profile, profile_view, edit_article, user_profile_view,
                                                delete_article, my_articles, send_friend_request, accept_friend_request,
                                                decline_friend_request, friends_list, search,
-                                               follow_article, unfollow_article, followed_articles, cancel_friend_request )
+                                               follow_article, unfollow_article, followed_articles,
+                                               cancel_friend_request, password_reset_request_view,
+                                               password_reset_confirm_view, password_reset_complete_view,
+                                               conversation_view, conversation_list_view)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -42,12 +34,17 @@ urlpatterns = [
     path('my-articles/', my_articles, name='my_articles'),
     # Dodajesz ścieżkę do zmiany hasła
     path('change-password/', change_password, name='change_password'),
-    path('password-reset/', password_reset_request_view, name='password_reset_request'), # Dodano URL dla żądania resetu hasła
-    path('password-reset/<str:token>/', password_reset_confirm_view, name='password_reset_confirm'), # Dodano URL dla potwierdzenia resetu hasła
-    path('password-reset-complete/', password_reset_complete_view, name='password_reset_complete'), # Dodano URL dla zakończenia resetu hasła
+    path('password-reset/', password_reset_request_view, name='password_reset_request'),
+    # Dodano URL dla żądania resetu hasła
+    path('password-reset/<str:token>/', password_reset_confirm_view, name='password_reset_confirm'),
+    # Dodano URL dla potwierdzenia resetu hasła
+    path('password-reset-complete/', password_reset_complete_view, name='password_reset_complete'),
+    # Dodano URL dla zakończenia resetu hasła
     path('send-request/<int:user_id>/', send_friend_request, name='send_friend_request'),  # wysłanie zaproszenia
-    path('accept-request/<int:request_id>/', accept_friend_request, name='accept_friend_request'),  # akceptacja zaproszenia
-    path('decline-request/<int:request_id>/', decline_friend_request, name='decline_friend_request'),  # odrzucenie zaproszenia
+    path('accept-request/<int:request_id>/', accept_friend_request, name='accept_friend_request'),
+    # akceptacja zaproszenia
+    path('decline-request/<int:request_id>/', decline_friend_request, name='decline_friend_request'),
+    # odrzucenie zaproszenia
     path('friends/', friends_list, name='friends_list'),
     path('followed-articles/', followed_articles, name='followed_articles'),
     path('article/<int:article_id>/download/', scinet_download_article_file, name='download_article_file'),
@@ -57,6 +54,7 @@ urlpatterns = [
     path('cancel-request/<int:user_id>/', cancel_friend_request, name='cancel_friend_request'),
     path('conversations/', conversation_list_view, name='conversations'),
     path('conversation/<int:user_id>/', conversation_view, name='conversation'),
+
 ]
 
 if settings.DEBUG:

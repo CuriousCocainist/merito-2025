@@ -846,20 +846,34 @@ def conversation_view(request, user_id):
         'other_user': other_user
     })
 
-# views.py
+@login_required
 def conversation_list_view(request):
-    conversations = Conversation.objects.filter(participants=request.user).distinct()
-    convo_list = []
+    # znajomi
+    friends_sent = FriendshipModel.objects.filter(user=request.user, status='accepted').values_list('friend', flat=True)
+    friends_received = FriendshipModel.objects.filter(friend=request.user, status='accepted').values_list('user', flat=True)
+    friend_ids = set(friends_sent) | set(friends_received)
+    friends = User.objects.filter(id__in=friend_ids)
 
-    for convo in conversations:
-        other_user = convo.participants.exclude(id=request.user.id).first()
-        convo_list.append({
+    convo_data = []
+    for friend in friends:
+        convo = Conversation.objects.filter(participants=request.user).filter(participants=friend).first()
+        unread_count = 0
+        if convo:
+            unread_count = Message.objects.filter(
+                conversation=convo,
+                sender=friend,
+                read=False
+            ).count()
+
+        convo_data.append({
+            'friend': friend,
             'conversation': convo,
-            'other_user': other_user
+            'unread_count': unread_count,
         })
 
     return render(request, 'chat/conversation_list.html', {
-        'conversations': convo_list
+        'friend_conversations': convo_data
     })
+
 
 
