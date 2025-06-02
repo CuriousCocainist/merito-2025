@@ -11,9 +11,10 @@ from app_scinet.forms.CommentForm import CommentForm
 from app_scinet.forms.UserProfileFrom import UserProfileForm
 from app_scinet.models import Article, Interaction, ArticleWatch
 from app_scinet.forms import CustomUserRegistrationForm
+from app_scinet.models.ConversationModel import Conversation
 from app_scinet.models.FriendshipModel import FriendshipModel
+from app_scinet.models.MessageModel import Message
 from app_scinet.models.UserProfileModel import UserProfile
-from django import forms #Import modułu formularzy Django
 from django.utils.crypto import get_random_string # Dodano import get_random_string
 from django.core.mail import send_mail # Dodano import send_mail
 from django.urls import reverse # Dodano import reverse
@@ -22,6 +23,8 @@ from django.conf import settings # Dodano import settings
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.http import JsonResponse
+
+from app_scinet.utils import get_or_create_conversation
 
 User = get_user_model() # Pobranie modelu User
 
@@ -808,3 +811,55 @@ def password_reset_confirm_view(request, token): # Widok do resetowania hasła p
 
 def password_reset_complete_view(request):
     return render(request, 'password_reset_complete.html')
+
+
+@login_required
+def conversation_view(request, user_id):
+    other_user = get_object_or_404(User, id=user_id)
+    friendship = FriendshipModel.objects.filter(
+        user=request.user, friend=other_user, status='accepted'
+    ).exists() or FriendshipModel.objects.filter(
+        user=other_user, friend=request.user, status='accepted'
+    ).exists()
+
+    if not friendship:
+        return render(request, 'chat/not_friends.html')
+
+    conversation = get_or_create_conversation(request.user, other_user)
+
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        if text:
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                text=text
+            )
+        return redirect('conversation', user_id=other_user.id)
+
+    conversation.messages.filter(read=False).exclude(sender=request.user).update(read=True)
+
+    # Jeśli nie ma wiadomości, przekierowujemy do widoku rozmowy
+    return render(request, 'chat/conversation.html', {
+        'conversation': conversation,
+        'messages': conversation.messages.all(),
+        'other_user': other_user
+    })
+
+# views.py
+def conversation_list_view(request):
+    conversations = Conversation.objects.filter(participants=request.user).distinct()
+    convo_list = []
+
+    for convo in conversations:
+        other_user = convo.participants.exclude(id=request.user.id).first()
+        convo_list.append({
+            'conversation': convo,
+            'other_user': other_user
+        })
+
+    return render(request, 'chat/conversation_list.html', {
+        'conversations': convo_list
+    })
+
+

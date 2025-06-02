@@ -9,7 +9,7 @@ from app_scinet.views.front_pages_view import (
     logout_page, like_article, unlike_article, comment_article, add_article,
     edit_profile, profile_view, edit_article, delete_article, my_articles,
     password_reset_request_view, password_reset_confirm_view, password_reset_complete_view,
-    cancel_friend_request  # Dodano importy
+    cancel_friend_request,conversation_view, conversation_list_view,
 )
 
 # Importujesz widok zmiany hasła
@@ -55,11 +55,8 @@ urlpatterns = [
     path('unfollow/<int:article_id>/', unfollow_article, name='unfollow_article'),
     path('search/', search, name='search'),
     path('cancel-request/<int:user_id>/', cancel_friend_request, name='cancel_friend_request'),
-
-
-
-
-
+    path('conversations/', conversation_list_view, name='conversations'),
+    path('conversation/<int:user_id>/', conversation_view, name='conversation'),
 ]
 
 if settings.DEBUG:

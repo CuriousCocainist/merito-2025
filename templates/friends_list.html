@@ -8,7 +8,8 @@
             <!-- Wyświetlanie komunikatów -->
             {% if messages %}
                 {% for message in messages %}
-                    <div class="bg-green-50 text-green-800 p-4 rounded-lg mb-4 {% if message.tags %}{{ message.tags }}{% endif %}">
+                    <div class="bg-green-50 text-green-800 p-4 rounded-lg mb-4
+                            {% if message.tags %}{{ message.tags }}{% endif %}">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -48,14 +49,16 @@
                                            class="text-blue-600 hover:text-blue-800">
                                             Zobacz profil
                                         </a>
-                                        <form method="POST" action="{% url 'accept_friend_request' request.id %}" class="inline">
+                                        <form method="POST" action="{% url 'accept_friend_request' request.id %}"
+                                              class="inline">
                                             {% csrf_token %}
                                             <button type="submit"
                                                     class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-500 transition">
                                                 Akceptuj
                                             </button>
                                         </form>
-                                        <form method="POST" action="{% url 'decline_friend_request' request.id %}" class="inline">
+                                        <form method="POST" action="{% url 'decline_friend_request' request.id %}"
+                                              class="inline">
                                             {% csrf_token %}
                                             <button type="submit"
                                                     class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition">
@@ -77,6 +80,7 @@
             {% if friends %}
                 <div class="space-y-4">
                     {% for friend in friends %}
+
                         <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                             <div class="flex items-center gap-4">
                                 {% if friend.userprofile and friend.userprofile.avatar %}
@@ -100,6 +104,10 @@
                                class="text-blue-600 hover:text-blue-800">
                                 Zobacz profil
                             </a>
+                            <div class="flex items-center justify-between">
+                                <a href="{% url 'conversation' user_id=friend.id %}"
+                                   class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">Napisz wiadomość</a>
+                            </div>
                         </div>
                     {% endfor %}
                 </div>
@@ -188,7 +196,9 @@
                                     {% if item.request_exists %}
                                         <span class="text-gray-500 italic">Oczekuje na potwierdzenie</span>
                                     {% else %}
-                                        <form method="POST" action="{% url 'send_friend_request' user_id=item.user.id %}" class="inline">
+                                        <form method="POST"
+                                              action="{% url 'send_friend_request' user_id=item.user.id %}"
+                                              class="inline">
                                             {% csrf_token %}
                                             <button type="submit"
                                                     class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">
