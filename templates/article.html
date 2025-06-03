@@ -1,6 +1,6 @@
 {% extends 'basic_template.html' %}
 {% load static %}
-
+{% load social_share %}
 {% block content %}
 
     <!-- Feed -->
@@ -135,8 +135,7 @@
                             type="button"
                             class="flex items-center gap-2 group transition-all text-gray-700 hover:text-blue-600 like-toggle"
                             data-article-id="{{ article.id }}"
-                            data-liked="{{ article.liked_by_user|yesno:'true,false' }}"
-                    >
+                            data-liked="{{ article.liked_by_user|yesno:'true,false' }}">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                              stroke="currentColor" class="size-5">
                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -144,6 +143,54 @@
                         </svg>
                         <span class="like-label text-sm {% if article.liked_by_user %}underline text-blue-600{% else %}text-gray-600{% endif %}">
                         {% if article.liked_by_user %}Lubisz to{% else %}Polub to{% endif %}
+                        </span>
+                    </button>
+                    <!-- Przycisk do udostępniania w mediach społecznościowych -->
+                    <div class="relative" id="share-dropdown-container-{{ article.id }}">
+                        <button type="button"
+                            onclick="toggleShareDropdown({{ article.id }})"
+                            class="text-blue-600 hover:underline flex items-center gap-1"
+                            title="External link"
+                            id="share-dropdown-btn-{{ article.id }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="#2563eb">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M17.5 6.5a2.5 2.5 0 1 0-2.45-2.01l-6.1 3.05a2.5 2.5 0 1 0 0 3.92l6.1 3.05a2.5 2.5 0 1 0 .7-1.45l-6.1-3.05a2.5 2.5 0 0 0 0-1.02l6.1-3.05A2.5 2.5 0 0 0 17.5 6.5z"/>
+                            </svg>
+                            <span>Podziel się</span>
+                        </button>
+                        <!-- Opcje serwisów do udostępniania - https://github.com/fcurella/django-social-share?tab=readme-ov-file -->
+                        <div class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-10"
+                             id="share-dropdown-{{ article.id }}">
+                            <ul class="py-1 text-sm text-gray-700">
+                                <li class="px-4 py-2 hover:bg-gray-100">
+                                    {% post_to_twitter request.build_absolute_uri "Twitter" %}
+                                </li>
+                                <li class="px-4 py-2 hover:bg-gray-100">
+                                    {% post_to_facebook request.build_absolute_uri "Facebook" %}
+                                </li>
+                                <li class="px-4 py-2 hover:bg-gray-100">
+                                    {% post_to_reddit request.build_absolute_uri "Reddit" %}
+                                </li>
+                            </ul>
+                        </div>
+                        <!-- Skrypt obsługujący rozwijaną listę serwisów do dzielenia się treścią -->
+                        <script>
+                        function toggleShareDropdown(id) {
+                            const dropdown = document.getElementById(`share-dropdown-${id}`);
+                            dropdown.classList.toggle('hidden');
+                            if (!dropdown.classList.contains('hidden')) {
+                                document.addEventListener('mousedown', function handler(e) {
+                                    const container = document.getElementById(`share-dropdown-container-${id}`);
+                                    if (!container.contains(e.target)) {
+                                        dropdown.classList.add('hidden');
+                                        document.removeEventListener('mousedown', handler);
+                                    }
+                                });
+                            }
+                        }
+                        </script>
+                    </div>
+
                 </div>
             </div>
         </div>
