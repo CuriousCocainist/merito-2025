@@ -128,28 +128,26 @@ def index_page(request):
 
 
 def article_page(request, article_id): # widok pojedynczego artykułu
-    article = get_object_or_404(Article, id=article_id)
-    article_like_count = Interaction.objects.filter(article=article, type='like').count()
+    article = get_object_or_404(Article, id=article_id) # pobiera artykuł lub zwraca 404
+    article.like_count = Interaction.objects.filter(article=article, type='like').count()   # liczy polubienia
 
     article.read_count += 1   # zwiększa liczbę wyświetleń przy każdej odsłonie
     article.save()
 
-    get_article_related_details(
+    get_article_related_details(  # pobiera dodatkowe dane (np. czy użytkownik polubił/obserwuje)
         request=request,
         article=article
     )
 
     comments = Interaction.objects.filter(article=article, type='comment').order_by('created_at')
-    comment_form = CommentForm()
-    like_count = Interaction.objects.filter(article=article, type='like').count()
+    comment_form = CommentForm()  # formularz do dodania komentarza
 
     context = {
         'article': article,
         'comment_form': comment_form,
         'comments': comments,
-        'article_like_count': article_like_count,
     }
-    return render(request, 'article.html', context)
+    return render(request, 'article.html', context)   # renderuje szablon artykułu
 
 
 # PoC
@@ -698,25 +696,27 @@ def friends_list(request):
     return render(request, 'friends_list.html', context)
 
 @login_required
-def followed_articles(request):
+def followed_articles(request): # wyświetla obserwowane artykuły
     articles_watched = ArticleWatch.objects.filter(user=request.user)
     articles_followed = Article.objects.filter(id__in=articles_watched.values('article_id'))
 
     # Zebranie śledzonych artykułów, które istnieją, do zmiennej articles
     articles = []
     for article in articles_followed:
-        article.followed_by_user = articles_watched.filter(article=article).exists()
-        articles.append(article)
+        article.like_count = Interaction.objects.filter(article=article, type='like').count() # liczba polubień
+        article.comment_count = Interaction.objects.filter(article=article, type='comment').count() # liczba komentarzy
+        article.followed_by_user = articles_watched.filter(article=article).exists() # czy użytkownik obserwuje
+        articles.append(article) # dodanie do listy
 
-    paginator = Paginator(articles, 5)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(articles, 5) # podział na strony (5 artykułów na stronę)
+    page_number = request.GET.get('page') # numer aktualnej strony
+    page_obj = paginator.get_page(page_number) # dane dla bieżącej strony
 
     context = {
         'page_obj': page_obj,
         'title': 'Obserwowane artykuły',
     }
-    return render(request, 'followed_articles.html', context)
+    return render(request, 'followed_articles.html', context) # renderuje stronę z obserwowanymi
 
 @login_required
 def search(request):
