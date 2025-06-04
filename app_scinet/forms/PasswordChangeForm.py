@@ -15,7 +15,7 @@ class PasswordChangeForm(forms.Form):
     # Pole na powtórne wpisanie nowego hasła, ukryte, z własną etykietą
     confirm_password = forms.CharField(
         widget=forms.PasswordInput,
-        label="Powtórz Nowy hasło"
+        label="Powtórz nowe hasło"
     )
 
     # Konstruktor klasy, przyjmuje użytkownika i inne argumenty

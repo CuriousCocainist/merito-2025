@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'app_scinet'
+    'app_scinet',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
@@ -143,4 +144,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Ścieżka logowania dla @login_required
 LOGIN_URL = '/login/'
+
+# Ustawienia poczty e-mail (do testowania w konsoli)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'no-reply@scinet.pl' # Adres, z którego ma być wysyłany mail (dowolny, w celach testowych)
+
 
