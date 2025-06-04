@@ -700,15 +700,13 @@ def followed_articles(request): # wyświetla obserwowane artykuły
     articles_watched = ArticleWatch.objects.filter(user=request.user)
     articles_followed = Article.objects.filter(id__in=articles_watched.values('article_id'))
 
-    # Zebranie śledzonych artykułów, które istnieją, do zmiennej articles
-    articles = []
+    # Uzupełniamy dane dla obserwowanych artykułów
     for article in articles_followed:
         article.like_count = Interaction.objects.filter(article=article, type='like').count() # liczba polubień
         article.comment_count = Interaction.objects.filter(article=article, type='comment').count() # liczba komentarzy
-        article.followed_by_user = articles_watched.filter(article=article).exists() # czy użytkownik obserwuje
-        articles.append(article) # dodanie do listy
+        article.followed_by_user = True  # bo tu są tylko obserwowane artykuły
 
-    paginator = Paginator(articles, 5) # podział na strony (5 artykułów na stronę)
+    paginator = Paginator(articles_followed, 5) # podział na strony (5 artykułów na stronę)
     page_number = request.GET.get('page') # numer aktualnej strony
     page_obj = paginator.get_page(page_number) # dane dla bieżącej strony
 
