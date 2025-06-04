@@ -10,6 +10,11 @@
 <body class="bg-white">
 <!-- Pasek nawigacyjny -->
 {% include 'nav.html' %}
+
+<form style="display: none;">
+    {% csrf_token %}
+</form>
+
 <main class="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 gap-6 {% if is_grid_cols_1 %}grid-cols-1{% else %}grid-cols-1 lg:grid-cols-3{% endif %}">
     {% block content %}{% endblock %}
     <aside class="space-y-6">
@@ -19,56 +24,153 @@
 </main>
 {% include 'footer.html' %}
 
-    <!-- TEST: To jest szablon bazowy -->
-
-    {% if messages %} <!-- jeśli nie ma pliku do pobrania, to wyskakuje okienko z taką informacją -->
+{% for message in messages %}
+    {% if message and message.tags and message.message and message.message|length > 0 %}
         <div id="message-popup" class="fixed inset-0 flex items-center justify-center z-50">
             <div class="bg-blue-50 border border-blue-400 text-blue-800 px-6 py-4 rounded shadow-md text-center max-w-md">
-                {% for message in messages %}
-                    <p>{{ message }}</p>
-                {% endfor %}
+                <p>{{ message }}</p>
             </div>
         </div>
-
         <script>
             setTimeout(() => {
                 const popup = document.getElementById('message-popup');
                 if (popup) popup.style.display = 'none';
-            }, 3000); // okienko znika po 3 sekundach
+            }, 3000);
         </script>
     {% endif %}
+{% endfor %}
+
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.like-toggle').forEach(button => {
-        button.addEventListener('click', function () {
-            const articleId = this.dataset.articleId;
-            const liked = this.dataset.liked === 'true';
-            const url = liked ? `/unlike/${articleId}/` : `/like/${articleId}/`;
+    document.addEventListener('DOMContentLoaded', function () {
+        const csrfTokenElement = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrfToken = csrfTokenElement ? csrfTokenElement.value : ''; // pobiera token CSRF
 
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Accept': 'application/json',
-                },
-            })
-                .then(response => response.json())
-                .then(data => {
-                    this.dataset.liked = data.liked.toString();
-                    this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub';
+        // Obsługa przycisku "Polub"
+        document.querySelectorAll('.like-toggle').forEach(button => {
+            button.addEventListener('click', function () {
+                const articleId = this.dataset.articleId; // id artykułu
+                const liked = this.dataset.liked === 'true'; // sprawdź, czy użytkownik już polubił
+                const url = liked ? `/unlike/${articleId}/` : `/like/${articleId}/`; // wybierz odpowiedni URL
 
-                    //  aktualizacja liczby polubień (serc)
-                    const heartSpan = this.parentElement.querySelector('span');
-                    if (heartSpan) {
-                        heartSpan.textContent = `${data.like_count}❤️`;
+                // Wyślij żądanie do serwera (like/unlike)
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken':  csrfToken, // dodaj token bezpieczeństwa
+                        'Accept': 'application/json',
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        this.dataset.liked = data.liked.toString(); // Zaktualizuj atrybuty HTML: czy artykuł jest polubiony
+                        this.querySelector('.like-label').textContent = data.liked ? 'Lubisz to' : 'Polub'; // zmienia tekst
+
+                    //  aktualizacja liczby polubień i wyglądu ikony serca
+                    const likeInfo = this.parentElement.querySelector('.like-info');
+                    if (likeInfo) {
+                        const countSpan = likeInfo.querySelector('.like-count');
+                        if (countSpan) {
+                            countSpan.textContent = data.like_count;
+                        }
+
+                    // Zmienia kolor wypełnienia ikony serca
+                        const heartIcon = likeInfo.querySelector('.heart-icon');
+                        if (heartIcon) {
+                            if (data.liked) {
+                                // Jeśli polubione – pokoloruj na czerwono
+                                heartIcon.setAttribute('fill', 'red');
+                                heartIcon.setAttribute('stroke', 'red');
+                            } else {
+                                // Jeśli niepolubione – usuń kolor
+                                heartIcon.setAttribute('fill', 'none');
+                                heartIcon.setAttribute('stroke', 'currentColor');
+                            }
+                        }
                     }
                 });
+            });
+        });
+
+        // Obsługa przycisku "Obserwuj"
+        document.querySelectorAll('.follow-toggle').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const articleId = this.dataset.articleId; // id artykułu
+                const followed = this.dataset.followed === 'true'; // czy już obserwowany
+                const url = followed ? this.dataset.unfollowUrl : this.dataset.followUrl; // wybierz odpowiedni URL
+                const label = this.querySelector(".follow-label");  // tekst przy dzwonku
+                const icon = this.querySelector("svg"); // ikona dzwonka
+
+                // Wyślij żądanie (obserwuj/nie obserwuj)
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        'article_id': articleId // dane wysyłane do serwera
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.dataset.followed = data.followed.toString(); // aktualizuj dane w HTML
+
+                    // Zmień kolor ikony dzwonka w zależności od stanu
+                    if (icon) {
+                        if (data.followed) {
+                            icon.setAttribute('stroke', '#FFD700'); // żółty, jeśli obserwowany
+                            icon.setAttribute('fill', '#FFD700');
+                        } else {
+                            icon.setAttribute('stroke', 'currentColor'); // domyślny (pusty), jeśli nie
+                            icon.setAttribute('fill', 'none');
+                        }
+                    }
+                    // Zmień tekst "Obserwuj" ↔ "Nie obserwuj" i ewentualne usunięcie artykułu z listy
+                    if (label) {
+                        label.textContent = data.followed ? 'Nie obserwuj' : 'Obserwuj';
+
+                        // Jeśli jesteśmy na liście obserwowanych i użytkownik kliknie "Nie obserwuj"
+                        const articleCard = button.closest('.article-card');
+                        if (articleCard) {
+                            articleCard.remove(); // usuń artykuł z widoku
+
+                            // Jeśli nie ma więcej artykułów, pokaż komunikat
+                            const remainingCards = document.querySelectorAll('.article-card');
+                            if (remainingCards.length === 0) {
+                                const section = document.querySelector('section.lg\\:col-span-2');
+                                if (section) {
+                                    const emptyMessage = document.createElement('p');
+                                    emptyMessage.textContent = 'Nie obserwujesz żadnego artykułu. Kliknij obserwuj 🔔 na wybranym artykule, aby go tutaj zobaczyć.';
+                                    emptyMessage.classList.add('mt-4', 'text-gray-600'); // opcjonalne style
+                                    section.appendChild(emptyMessage);
+                                }
+                            }
+                        }
+                    }
+
+
+                });
+            });
         });
     });
-})
+
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.innerText = message;
+        toast.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-md shadow-lg text-white text-sm font-semibold ${
+            type === 'success' ? 'bg-green-600' : 'bg-red-600'
+        }`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
 </script>
 
+
+{% block script %}{% endblock %}
 
 </body>
 </html>

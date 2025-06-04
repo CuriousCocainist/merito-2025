@@ -13,16 +13,18 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+import sys
+from django.contrib import messages # Import dla MESSAGE_TAGS
 
+# Ładowanie zmiennych środowiskowych z pliku .env
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# --- Konfiguracja ścieżek ---
+# Budowanie ścieżek w projekcie, np. BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
+# --- Ustawienia bezpieczeństwa i debugowania ---
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-kx5k2j#m0#n3g(@@uw5+!e)x)luy6h$3^1qa+fa)=0iyq-_ms-'
 
@@ -32,17 +34,22 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 
-# Application definition
-
+# --- Definicja aplikacji ---
 INSTALLED_APPS = [
+    # Aplikacje wbudowane w Django
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Aplikacje własne
     'app_scinet',
+
+    # Aplikacje zewnętrzne
     'widget_tweaks',
+    'django_social_share', # Biblioteka ułatwiająca dzielenie się treściami w mediach społecznościowych
 ]
 
 MIDDLEWARE = [
@@ -57,10 +64,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'project_app.urls'
 
+
+# --- Konfiguracja szablonów (Templates) ---
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')], # portal_scinet_python/templates
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], # Główne szablony projektu
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -75,14 +84,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'project_app.wsgi.application'
 
 
-# Database
+# --- Konfiguracja bazy danych ---
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
-        # 'ENGINE': 'django.db.backends.sqlite3',
         'ENGINE': 'django.db.backends.postgresql',
-        # 'NAME': BASE_DIR / 'db.sqlite3',
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
         'PASSWORD': os.getenv('DB_PASS'),
@@ -92,9 +98,8 @@ DATABASES = {
 }
 
 
-# Password validation
+# --- Walidacja hasła ---
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -111,42 +116,64 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
+# --- Internacjonalizacja (i18n) ---
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
-LANGUAGE_CODE = 'pl'
-TIME_ZONE = 'Europe/Warsaw'
-USE_I18N = True
+LANGUAGE_CODE = 'pl' # Język aplikacji
+TIME_ZONE = 'Europe/Warsaw' # Strefa czasowa
+USE_I18N = True # Włącz obsługę internacjonalizacji
 
-USE_TZ = True
+USE_TZ = True # Włącz obsługę stref czasowych
 
 
-# Default primary key field type
+# --- Domyślny typ klucza głównego ---
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Static files (CSS, JavaScript, Images)
+# --- Pliki statyczne (CSS, JavaScript, Obrazy) i Media ---
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
+STATIC_URL = 'static/' # URL do obsługi plików statycznych
+MEDIA_URL = '/media/' # URL do obsługi plików mediów (wgrywanych przez użytkowników)
+MEDIA_ROOT = BASE_DIR / 'media' # Fizyczna ścieżka do folderu mediów
 
-STATIC_URL = 'static/'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] # Dodatkowe katalogi dla plików statycznych (np. globalny folder 'static')
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Pamiętaj, aby uruchomić 'python manage.py collectstatic' przed deploymentem
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Ścieżka do przechowywania wgranych plików
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# Ścieżka logowania dla @login_required
-LOGIN_URL = '/login/'
-
-# Ustawienia poczty e-mail (do testowania w konsoli)
+# --- Ustawienia poczty e-mail ---
+# Do testowania w konsoli (maile pojawiają się w terminalu serwera Django)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'no-reply@scinet.pl' # Adres, z którego ma być wysyłany mail (dowolny, w celach testowych)
 
+# Jeśli chcesz wysyłać prawdziwe maile (np. przez Gmaila), odkomentuj poniższe i uzupełnij .env
 
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = os.getenv('EMAIL_HOST')
+# EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+# EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() == 'true' # Ustaw na True dla portu 465 i EMAIL_USE_TLS na False
+# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
+
+# --- Ustawienia wiadomości Django ---
+# Konfiguracja tagów wiadomości dla Bootstrapa/Tailwind CSS
+MESSAGE_TAGS = {
+    messages.DEBUG: 'debug',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'danger', # Zmieniono na 'danger' dla spójności z klasami alertów
+}
+
+
+# --- Inne ustawienia specyficzne dla aplikacji ---
+# Ścieżka logowania dla dekoratora @login_required
+LOGIN_URL = '/login/'
+
+# W trybie DEBUG pozwalamy na wyświetlanie przesłanych plików (np. zdjęć)
+#if DEBUG:
+#    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

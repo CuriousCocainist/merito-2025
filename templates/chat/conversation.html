@@ -1,0 +1,55 @@
+{% extends "basic_template.html" %}
+{% load static %}
+{% block sidebar %}
+    {% include "common/_sidebar.html" %}
+{% endblock %}
+{% block content %}
+<section class="lg:col-span-2 space-y-6">
+    <h2 class="text-xl font-semibold mb-4">Czat z {{ other_user.username }}</h2>
+    <div class="bg-white border rounded-lg h-96 overflow-y-scroll p-4 space-y-2 shadow">
+        {% for msg in messages %}
+            <div class="flex {% if msg.sender == request.user %}justify-end{% else %}justify-start{% endif %} items-end">
+                {% if msg.sender != request.user %}
+                {% if msg.sender.profile.avatar %}
+                    <img src="{{ msg.sender.profile.avatar.url }}" alt="avatar" class="w-8 h-8 rounded-full mr-2">
+                                    {% else %}
+              <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12" alt="Domyślny avatar">
+                    {% endif %}
+                {% endif %}
+
+                <div>
+                    <div class="inline-block px-4 py-2 rounded-lg
+                        {% if msg.sender == request.user %}
+                            bg-blue-500 text-white
+                        {% else %}
+                            bg-gray-200 text-gray-800
+                        {% endif %}">
+                        {{ msg.text }}
+                    </div>
+                    <div class="text-xs text-gray-400 {% if msg.sender == request.user %}text-right{% endif %}">
+                        {{ msg.timestamp|date:"H:i d.m.Y" }}
+                    </div>
+                </div>
+
+                {% if msg.sender == request.user %}
+                                    {% if msg.sender.profile.avatar %}
+                    <img src="{{ msg.sender.profile.avatar.url }}" alt="avatar" class="w-8 h-8 rounded-full ml-2">
+                                        {% else %}
+                    <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12" alt="Domyślny avatar">
+                                        {% endif %}
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="text-center text-gray-400">Brak wiadomości.</p>
+        {% endfor %}
+    </div>
+
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        <div class="flex">
+            <input type="text" name="text" placeholder="Napisz wiadomość..." class="flex-grow border rounded-l px-4 py-2 focus:outline-none">
+            <button type="submit" class="bg-blue-500 text-white px-4 rounded-r">Wyślij</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

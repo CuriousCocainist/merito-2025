@@ -11,15 +11,20 @@ from app_scinet.forms.CommentForm import CommentForm
 from app_scinet.forms.UserProfileFrom import UserProfileForm
 from app_scinet.models import Article, Interaction, ArticleWatch
 from app_scinet.forms import CustomUserRegistrationForm
+from app_scinet.models.ConversationModel import Conversation
 from app_scinet.models.FriendshipModel import FriendshipModel
+from app_scinet.models.MessageModel import Message
 from app_scinet.models.UserProfileModel import UserProfile
-from django import forms #Import modułu formularzy Django
 from django.utils.crypto import get_random_string # Dodano import get_random_string
 from django.core.mail import send_mail # Dodano import send_mail
 from django.urls import reverse # Dodano import reverse
 from django.contrib.sites.shortcuts import get_current_site # Dodano import get_current_site
 from django.conf import settings # Dodano import settings
+from django.views.decorators.http import require_POST
+from django.contrib import messages
 from django.http import JsonResponse
+
+from app_scinet.utils import get_or_create_conversation
 
 User = get_user_model() # Pobranie modelu User
 
@@ -44,12 +49,35 @@ def get_article_related_details(request, article):
         article.followed_by_user = False
 
 def index_page(request):
+    suggested_users_with_requests = []  # Domyślnie pusta lista
+
     if request.user.is_authenticated:
         # Szukamy wszystkich zaakceptowanych znajomości w obie strony
         accepted_friendships = FriendshipModel.objects.filter(
             Q(user=request.user) | Q(friend=request.user),
             status='accepted'
         )
+
+        # Pobranie zaakceptowanych znajomych
+        friends = User.objects.filter(
+            Q(friend_requests_received__user=request.user, friend_requests_received__status='accepted') |
+            Q(friend_requests_sent__friend=request.user, friend_requests_sent__status='accepted')
+        ).distinct()
+
+        # ====== DODANE: sugerowani użytkownicy ======
+        related_ids = set(friends.values_list('id', flat=True))
+        related_ids.update(FriendshipModel.objects.filter(user=request.user).values_list('friend_id', flat=True))
+        related_ids.update(FriendshipModel.objects.filter(friend=request.user).values_list('user_id', flat=True))
+        related_ids.add(request.user.id)
+
+        suggested_users = User.objects.exclude(id__in=related_ids)[:5]
+        for user in suggested_users:
+            suggested_users_with_requests.append({
+                'user': user,
+                'request_exists': False,
+            })
+
+        # ====== KONIEC DODANEGO BLOKU ======
 
         # Wyciągamy ID znajomych
         friend_ids = set()
@@ -81,10 +109,7 @@ def index_page(request):
     # Dla każdego artykułu na liście, liczy ile polubień i komentarzy ma artykuł
     # oraz sprawdza, czy zalogowany użytkownik polubił dany artykuł
     for article in page_obj:
-        # Zliczanie polubień dla każdego artykułu
         article.like_count = Interaction.objects.filter(article=article, type='like').count()
-
-        # Zliczanie komentarzy dla każdego artykułu
         article.comment_count = Interaction.objects.filter(article=article, type='comment').count()
 
         get_article_related_details(
@@ -95,34 +120,34 @@ def index_page(request):
     # Przygotowanie kontekstu do przekazania do szablonu
     context = {
         'page_obj': page_obj,
+        'suggested_users_with_requests': suggested_users_with_requests,  # DODANE DO KONTEKSTU
     }
 
     # Renderowanie strony wykorzystując szablon 'main.html' i przygotowany kontekst
     return render(request, 'main.html', context)
 
+
 def article_page(request, article_id): # widok pojedynczego artykułu
-    article = get_object_or_404(Article, id=article_id)
-    article_like_count = Interaction.objects.filter(article=article, type='like').count()
+    article = get_object_or_404(Article, id=article_id) # pobiera artykuł lub zwraca 404
+    article.like_count = Interaction.objects.filter(article=article, type='like').count()   # liczy polubienia
 
     article.read_count += 1   # zwiększa liczbę wyświetleń przy każdej odsłonie
     article.save()
 
-    get_article_related_details(
+    get_article_related_details(  # pobiera dodatkowe dane (np. czy użytkownik polubił/obserwuje)
         request=request,
         article=article
     )
 
     comments = Interaction.objects.filter(article=article, type='comment').order_by('created_at')
-    comment_form = CommentForm()
-    like_count = Interaction.objects.filter(article=article, type='like').count()
-    
+    comment_form = CommentForm()  # formularz do dodania komentarza
+
     context = {
         'article': article,
         'comment_form': comment_form,
         'comments': comments,
-        'like_count': like_count,
     }
-    return render(request, 'article.html', context)
+    return render(request, 'article.html', context)   # renderuje szablon artykułu
 
 
 # PoC
@@ -255,8 +280,9 @@ def follow_article(request, article_id):
         # gdzie znajdował się nagłówek artykułu
         return redirect(requester_url)
 
-        # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
-    return redirect('article', article_id=article_id)
+    return JsonResponse({
+        'followed': True,  # Artykuł jest teraz zaobserwowany
+    })
 
 
 # Widok obsługujący dezaktywację śledzenia artykułu
@@ -284,10 +310,10 @@ def unfollow_article(request, article_id):
         # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na stronę całego artykułu
         return redirect('article', article_id=article_id)
 
-    # Po usunięciu śledzenia artykułu przekierowujemy użytkownika z powrotem na konkretną stronę
-    # z której akcja została wywołana
-    # dla requester == 'main' lub requester == 'followed_articles'
-    return redirect(requester_url)
+    return JsonResponse({
+        'followed': False,  # Artykuł przestał być zaobserwowany
+    })
+
 
 
 # Widok obsługujący komentowanie artykułu
@@ -464,29 +490,80 @@ def user_profile_view(request, user_id):  # Stworzenie funkcji user_profile_view
 
     return render(request, 'user_profile.html', context)
 
+from django.http import JsonResponse
+
 @login_required
 def send_friend_request(request, user_id):
     friend = get_object_or_404(User, id=user_id)
 
-    # Sprawdzenie czy nie wysyłamy zaproszenia do samego siebie
+    # Blokujemy wysyłanie zaproszenia do siebie
     if friend == request.user:
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'error', 'message': 'Nie możesz wysłać zaproszenia do siebie'})
         messages.error(request, "Nie możesz wysłać zaproszenia do samego siebie.")
         return redirect('user_profile_view', user_id=friend.id)
 
+    # Szukamy istniejącej relacji
     friendship = FriendshipModel.objects.filter(user=request.user, friend=friend).first()
 
     if friendship:
+        # Jeśli wcześniej odrzucono, zmień na "oczekujące"
         if friendship.status == 'declined':
             friendship.status = 'pending'
             friendship.save()
-            messages.success(request, f"Wysłano ponownie zaproszenie do {friend.username}")
+            msg = f"Wysłano ponownie zaproszenie do {friend.username}"
+            status = 'ok'
         else:
-            messages.info(request, f"Zaproszenie do {friend.username} już istnieje")
+            msg = f"Zaproszenie do {friend.username} już istnieje"
+            status = 'exists'
     else:
+        # Tworzymy nową relację
         FriendshipModel.objects.create(user=request.user, friend=friend, status='pending')
-        messages.success(request, f"Wysłano zaproszenie do {friend.username}")
+        msg = f"Wysłano zaproszenie do {friend.username}"
+        status = 'ok'
 
+    # Jeśli zapytanie jest AJAX-owe — zwróć JSON (nie przekierowuj)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': status, 'message': msg})
+
+    # Dla zwykłych żądań — użyj wiadomości i przekierowania
+    messages.success(request, msg)
     return redirect('friends_list')
+
+
+
+
+@login_required
+@require_POST
+def cancel_friend_request(request, user_id):
+    friend = get_object_or_404(User, id=user_id)
+
+    # Szukamy zaproszenia wysłanego przez aktualnego użytkownika
+    friendship = FriendshipModel.objects.filter(user=request.user, friend=friend, status='pending').first()
+
+    if friendship:
+        friendship.delete()
+
+        # Treść komunikatu
+        msg = f"Anulowano zaproszenie do {friend.username}"
+
+        # Jeśli zapytanie jest AJAX-owe — zwróć JSON
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'ok', 'message': msg})
+
+        # Jeśli nie — pokaż wiadomość i przekieruj
+        messages.success(request, msg)
+        return redirect('friends_list')
+
+    error_msg = "Nie znaleziono zaproszenia"
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'error', 'message': error_msg})
+
+    messages.error(request, error_msg)
+    return redirect('friends_list')
+
+
+
 
 
 @login_required
@@ -537,32 +614,35 @@ def friends_list_view(request):
         'friends': friends,
         'suggested_users': suggested_users,
     })
-@login_required
+@login_required  # Tylko zalogowany użytkownik może wywołać ten widok
 def friends_list(request):
-    # Pobranie zaakceptowanych znajomych
+    # Pobranie użytkowników, z którymi aktualny użytkownik ma zaakceptowaną relację (w obie strony)
     friends = User.objects.filter(
         Q(friend_requests_received__user=request.user, friend_requests_received__status='accepted') |
         Q(friend_requests_sent__friend=request.user, friend_requests_sent__status='accepted')
     ).distinct()
 
-    # Pobranie oczekujących zaproszeń dla zalogowanego użytkownika (jako odbiorca)
+    # Pobranie zaproszeń do znajomych, które aktualny użytkownik otrzymał, ale jeszcze nie zaakceptował
     pending_requests = FriendshipModel.objects.filter(friend=request.user, status='pending')
-    pending_requests_count = pending_requests.count()
+    pending_requests_count = pending_requests.count()  # Liczba takich zaproszeń
 
-    # Pobranie użytkowników z relacją pending (wysłane lub otrzymane zaproszenia)
+    # Pobranie wszystkich relacji, które mają status 'pending' — zarówno wysłanych, jak i otrzymanych
     all_pending_requests = FriendshipModel.objects.filter(
         Q(user=request.user, status='pending') | Q(friend=request.user, status='pending')
     )
 
-    # Tworzenie listy użytkowników z oczekującymi zaproszeniami (wysłane lub otrzymane)
+    # Stworzenie listy słowników opisujących oczekujące zaproszenia z dodatkową informacją, kto je wysłał
     pending_users_with_requests = []
     for friendship in all_pending_requests:
-        if friendship.user == request.user:  # Zalogowany użytkownik wysłał zaproszenie
+        if friendship.user == request.user:
+            # Zalogowany użytkownik wysłał zaproszenie
             user = friendship.friend
             sent_by_current_user = True
-        else:  # Zalogowany użytkownik otrzymał zaproszenie
+        else:
+            # Zalogowany użytkownik otrzymał zaproszenie
             user = friendship.user
             sent_by_current_user = False
+
         pending_users_with_requests.append({
             'user': user,
             'request_exists': True,
@@ -570,35 +650,40 @@ def friends_list(request):
             'request_id': friendship.id,
         })
 
-    # Usunięcie duplikatów z listy pending
+    # Usunięcie duplikatów z listy oczekujących zaproszeń (np. w przypadku kilku relacji z tym samym użytkownikiem)
     seen_user_ids = set()
     unique_pending_users = []
     for item in pending_users_with_requests:
         if item['user'].id not in seen_user_ids:
             seen_user_ids.add(item['user'].id)
             unique_pending_users.append(item)
-    pending_users_with_requests = unique_pending_users[:10]
 
-    # Pobranie użytkowników bez żadnych relacji (ani pending, ani accepted)
+    pending_users_with_requests = unique_pending_users[:10]  # Ograniczenie do 10 użytkowników
+
+    # Zbiór ID wszystkich użytkowników, z którymi aktualny użytkownik ma jakąkolwiek relację
     all_related_ids = set()
-    all_related_ids.update(friend.id for friend in friends)
+    all_related_ids.update(friend.id for friend in friends)  # ID zaakceptowanych znajomych
     pending_sent_ids = FriendshipModel.objects.filter(user=request.user, status='pending').values_list('friend_id', flat=True)
     pending_received_ids = FriendshipModel.objects.filter(friend=request.user, status='pending').values_list('user_id', flat=True)
-    all_related_ids.update(pending_sent_ids)
-    all_related_ids.update(pending_received_ids)
-    all_related_ids.add(request.user.id)
+    all_related_ids.update(pending_sent_ids)  # ID użytkowników, do których wysłano zaproszenia
+    all_related_ids.update(pending_received_ids)  # ID użytkowników, od których otrzymano zaproszenia
+    all_related_ids.add(request.user.id)  # ID samego siebie
 
-    # Pobranie sugerowanych użytkowników (bez żadnych relacji)
+    # Pobranie użytkowników, którzy nie mają żadnej relacji z aktualnym użytkownikiem
     suggested_users = User.objects.exclude(id__in=all_related_ids)[:10]
 
-    # Tworzenie listy sugerowanych użytkowników
+    # Utworzenie listy słowników opisujących sugerowanych użytkowników wraz z informacjami o ich profilach
     suggested_users_with_requests = []
     for user in suggested_users:
+        profile = UserProfile.objects.filter(user=user).first()
         suggested_users_with_requests.append({
             'user': user,
             'request_exists': False,
+            'bio': profile.bio if profile and profile.bio else '',
+            'avatar_url': profile.avatar.url if profile and profile.avatar else None,
         })
 
+    # Kontekst przekazywany do szablonu HTML
     context = {
         'friends': friends,
         'pending_requests': pending_requests,
@@ -606,28 +691,32 @@ def friends_list(request):
         'suggested_users_with_requests': suggested_users_with_requests,
         'pending_requests_count': pending_requests_count,
     }
+
+    # Renderowanie widoku friends_list.html z przekazanym kontekstem
     return render(request, 'friends_list.html', context)
 
 @login_required
-def followed_articles(request):
+def followed_articles(request): # wyświetla obserwowane artykuły
     articles_watched = ArticleWatch.objects.filter(user=request.user)
     articles_followed = Article.objects.filter(id__in=articles_watched.values('article_id'))
 
     # Zebranie śledzonych artykułów, które istnieją, do zmiennej articles
     articles = []
     for article in articles_followed:
-        article.followed_by_user = articles_watched.filter(article=article).exists()
-        articles.append(article)
+        article.like_count = Interaction.objects.filter(article=article, type='like').count() # liczba polubień
+        article.comment_count = Interaction.objects.filter(article=article, type='comment').count() # liczba komentarzy
+        article.followed_by_user = articles_watched.filter(article=article).exists() # czy użytkownik obserwuje
+        articles.append(article) # dodanie do listy
 
-    paginator = Paginator(articles, 5)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(articles, 5) # podział na strony (5 artykułów na stronę)
+    page_number = request.GET.get('page') # numer aktualnej strony
+    page_obj = paginator.get_page(page_number) # dane dla bieżącej strony
 
     context = {
         'page_obj': page_obj,
         'title': 'Obserwowane artykuły',
     }
-    return render(request, 'followed_articles.html', context)
+    return render(request, 'followed_articles.html', context) # renderuje stronę z obserwowanymi
 
 @login_required
 def search(request):
@@ -722,3 +811,69 @@ def password_reset_confirm_view(request, token): # Widok do resetowania hasła p
 
 def password_reset_complete_view(request):
     return render(request, 'password_reset_complete.html')
+
+
+@login_required
+def conversation_view(request, user_id):
+    other_user = get_object_or_404(User, id=user_id)
+    friendship = FriendshipModel.objects.filter(
+        user=request.user, friend=other_user, status='accepted'
+    ).exists() or FriendshipModel.objects.filter(
+        user=other_user, friend=request.user, status='accepted'
+    ).exists()
+
+    if not friendship:
+        return render(request, 'chat/not_friends.html')
+
+    conversation = get_or_create_conversation(request.user, other_user)
+
+    if request.method == 'POST':
+        text = request.POST.get('text')
+        if text:
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                text=text
+            )
+        return redirect('conversation', user_id=other_user.id)
+
+    conversation.messages.filter(read=False).exclude(sender=request.user).update(read=True)
+
+    # Jeśli nie ma wiadomości, przekierowujemy do widoku rozmowy
+    return render(request, 'chat/conversation.html', {
+        'conversation': conversation,
+        'messages': conversation.messages.all(),
+        'other_user': other_user
+    })
+
+@login_required
+def conversation_list_view(request):
+    # znajomi
+    friends_sent = FriendshipModel.objects.filter(user=request.user, status='accepted').values_list('friend', flat=True)
+    friends_received = FriendshipModel.objects.filter(friend=request.user, status='accepted').values_list('user', flat=True)
+    friend_ids = set(friends_sent) | set(friends_received)
+    friends = User.objects.filter(id__in=friend_ids)
+
+    convo_data = []
+    for friend in friends:
+        convo = Conversation.objects.filter(participants=request.user).filter(participants=friend).first()
+        unread_count = 0
+        if convo:
+            unread_count = Message.objects.filter(
+                conversation=convo,
+                sender=friend,
+                read=False
+            ).count()
+
+        convo_data.append({
+            'friend': friend,
+            'conversation': convo,
+            'unread_count': unread_count,
+        })
+
+    return render(request, 'chat/conversation_list.html', {
+        'friend_conversations': convo_data
+    })
+
+
+

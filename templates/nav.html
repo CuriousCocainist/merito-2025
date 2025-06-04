@@ -1,12 +1,14 @@
+<!-- Górny pasek z ikoną profilu lub linkami logowania/rejestracji -->
 <div class="bg-blue-900">
     <div class="mx-auto flex h-10 max-w-7xl items-center justify-end px-4 sm:px-6 lg:px-8">
+        <!-- Sprawdzamy, czy użytkownik jest zalogowany -->
         {% if user.is_authenticated %}
             <div class="flex items-center space-x-4 text-sm font-medium text-white">
 
-                <!-- Ikona profilu użytkownika -->
-
+                <!-- Ikona profilu użytkownika, która po najechaniu pokazuje menu -->
                 <div class="group relative">
                     <a href="#" class="text-white hover:text-blue-600 focus:outline-none">
+                        <!-- Zdjęcie profilowe użytkownika -->
                         <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                              stroke="currentColor"
                              aria-hidden="true" data-slot="icon">
@@ -14,12 +16,15 @@
                                   d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"></path>
                         </svg>
                     </a>
+                    <!-- Menu rozwijane po najechaniu na ikonę -->
                     <div class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out z-10">
                         <a href="{% url 'profile_detail' %}"
                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <span>Witaj, {{ user.first_name|default:user.username }}</span></a>
+                        <!-- Link do zmiany hasła -->
                         <a href="{% url 'change_password' %}"
                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Zmień hasło</a>
+                        <!-- Link do wylogowania -->
                         <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             Wyloguj się
                         </a>
@@ -30,6 +35,7 @@
             </div>
 
         {% else %}
+            <!-- Jeśli użytkownik NIE jest zalogowany, pokazujemy linki do logowania i rejestracji -->
             <div class="flex items-center space-x-4 text-sm font-medium text-white">
                 <a href="{% url 'login' %}" class="hover:text-gray-100">Zaloguj się</a>
                 <span class="h-4 w-px bg-white/50"></span>
@@ -60,11 +66,17 @@
             <div class="hidden md:flex items-center space-x-8">
                 <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Strona
                     główna</a>
-                <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Publikacje</a>
-                <a href="{% url 'friends_list' %}"
-                   class="text-gray-700 hover:text-blue-600 text-sm font-medium">Znajomi</a>
-                <a href="{% url 'followed_articles' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Polubione
+
+                <!-- Podstrony wyświetlane tylko dla zalogowanych użytkowników: Znajomi, Obserwowane artykuły, ikona wiadomości -->
+                {% if user.is_authenticated %}
+                    <a href="{% url 'friends_list' %}"
+                       class="text-gray-700 hover:text-blue-600 text-sm font-medium">Znajomi</a>
+                    <a href="{% url 'followed_articles' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Obserwowane
                     artykuły</a>
+                    {% load chat_nav_tags %}
+                    {% show_unread_messages_icon %}
+                {% endif %}
+
 
                 <!-- Przycisk do wyszukiwania -->
                 <form action="{% url 'search' %}" method="get" class="flex items-center space-x-2">
@@ -101,12 +113,12 @@
             <!-- Menu mobilne widoczne tylko na małych ekranach poniżej md-->
             {#    <div id="mobile-menu" class="md:hidden hidden flex flex-col px-4 pb-4 space-y-2">#}
             {#        <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Strona główna</a>#}
-            {#        <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Publikacje</a>#}
             {#        <a href="{% url 'friends_list' %}" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Znajomi</a>#}
             {#        <a href="#" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Polubione artykuły</a>#}
             {#    </div>#}
 </nav>
 
+<!-- Styl: obsługa pojawiania się rozwijanego menu profilu po najechaniu -->
 <style>
     .group {
         position: relative;
