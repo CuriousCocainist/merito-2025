@@ -1,7 +1,8 @@
-{% extends 'basic_template.html' %}
-{% load static %}
+{% extends 'basic_template.html' %}       {# Dziedziczenie z głównego szablonu strony #}
+{% load static %}       {# Wczytanie tagu 'static' do obsługi plików statycznych (np. obrazów, CSS) #}
+{% load social_share %}     {# Wczytanie niestandardowych tagów do udostępniania treści w mediach społecznościowych #}
 {% block content %}
-{% load social_share %}
+
     <!-- Feed -->
     <section class="lg:col-span-2 space-y-6">
         <!-- Post -->
@@ -11,10 +12,13 @@
                 <!-- Link do profilu użytkownika -->
                 <a href="{% url 'user_profile_view' article.user.id %}" class="flex items-center gap-2 mb-4">
                     {% if article.user.profile.avatar %}
+                        <!-- Awatar użytkownika (jeśli jest ustawiony) -->
                         <img src="{{ article.user.profile.avatar.url }}" class="rounded-full w-12 h-12" alt="Avatar użytkownika">
                     {% else %}
+                        <!-- Domyślny awatar, jeśli użytkownik nie ustawił swojego -->
                         <img src="{% static 'img/profil.jpg' %}" class="rounded-full w-12 h-12" alt="Domyślny avatar">
                     {% endif %}
+                    <!-- Imię i nazwisko użytkownika -->
                     <div>
                         <p class="font-semibold">
                             {% if article.user.first_name or article.user.last_name %}
@@ -30,12 +34,15 @@
                 <!-- Link do artykułu: zdjęcie + tytuł -->
                 <a href="{% url 'article' article.id %}" class="block">
                     {% if article.image %}
+                        <!-- Miniatura artykułu -->
                         <img src="{{ article.image.url }}" alt="Miniaturka artykułu"
                              class="w-full h-[250px] object-cover rounded-md mb-2">
                     {% else %}
+                        <!-- Obraz zastępczy, jeśli brak miniatury -->
                         <img src="https://picsum.photos/seed/{{ article.id }}/800/250"
                              alt="Domyślny obraz" class="w-full h-[250px] object-cover rounded-md">
                     {% endif %}
+                    <!-- Tytuł artykułu -->
                     <h2 class="text-xl font-bold text-gray-800 hover:underline mb-1">{{ article.title }}</h2>
                 </a>
 
@@ -51,12 +58,13 @@
                 <p class="text-sm text-gray-500 mt-2">
                     {{ article.created_at|date:"F Y" }} • {{ article.read_count }} wyświetleń</p>
 
-                <!-- Przyciski Download, Save, Follow oraz Lubię to i Komentuj w jednej linii -->
+                <!-- Przyciski Pobierz, Zapisz, Obserwuj, Lubię to i Komentuj w jednej linii -->
                 <div class="mt-6 flex justify-between items-center">
                     <!-- Przyciski po lewej -->
                     <div class="flex items-center gap-4">
                         <a href="{% url 'download_article_file' article.id %}" class="
                         flex items-center gap-1 bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm">
+
                             <!-- Ikona pobierz (strzałka w dół) -->
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path>
@@ -71,13 +79,13 @@
                                 data-follow-url="{% url 'follow_article' article.id %}"
                                 data-unfollow-url="{% url 'unfollow_article' article.id %}"
                                 data-followed="{{ article.followed_by_user|yesno:"true,false" }}">
-                            {% if article.followed_by_user %}
+                            {% if article.followed_by_user %}     {# Jeśli użytkownik już obserwuje artykuł to ikona NIE obserwuj #}
                                 <!-- Ikona NIE obserwuj -->
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" class="size-6" style="stroke:#FFD700;">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"></path>
                                 </svg>
                                 <span class="follow-label">Nie obserwuj</span>
-                            {% else %}
+                            {% else %}    {# Jeśli jeszcze nie obserwuje to ikona dzwonka - obserwuj #}
                                 <!-- Ikona dzwonka (obserwuj) -->
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#FFD700" stroke-width="1.5" class="w-6 h-6">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9a6 6 0 00-12 0v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"></path>
@@ -90,18 +98,20 @@
                     <!-- Przyciski po prawej -->
                     <div class="flex items-center gap-6">
                         <!-- Liczba polubień + serce -->
-                        <span class="like-info flex items-center gap-1 text-gray-700">
-                            <span class="like-count">{{ article_like_count }}</span>
-                            {% if article.liked_by_user %} <!-- dynamicznie ustawia, czy użytkownik już polubił dany artykuł -->
-                                <svg class="heart-icon size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" stroke="red">
+                        <span class="like-info inline-flex items-center gap-1 align-middle text-gray-700">
+                            <span class="like-count">{{ article.like_count }}</span>
+                            <!-- dynamicznie ustawia, czy użytkownik już polubił dany artykuł -->
+                            {% if article.liked_by_user %}
+                                <svg class="heart-icon size-5 relative -top-[1px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="red" stroke="red">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path>
                                 </svg>
                             {% else %}
-                                <svg class="heart-icon size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <svg class="heart-icon size-5 relative -top-[1px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"></path>
                                 </svg>
                             {% endif %}
                         </span>
+
                         <!-- Przycisk like/unlike -->
                         <button
                                 type="button"
@@ -115,6 +125,7 @@
                             {% if article.liked_by_user %}Lubisz to{% else %}Polub to{% endif %}
                             </span>
                         </button>
+
                         <!-- Link do dodawania komentarzy -->
                         <a href="{% url 'article' article.id %}#komentarze"
                            class="text-blue-600 hover:underline flex items-center gap-1">
@@ -124,13 +135,14 @@
                                  </svg>
                             </span>
                             <span>
-                                {% if article.comment_count > 0 %}
-                                    {{ article.comment_count }} Komentarz{{ article.comment_count|pluralize:"e,y" }}
+                                {% if article.comment_count > 0 %}     {# Sprawdza, czy artykuł ma jakiekolwiek komentarze #}
+                                    {{ article.comment_count }} Komentarz{{ article.comment_count|pluralize:"e,y" }}   {# Wyświetla liczbę komentarzy i odpowiednią końcówkę dzięki pluralize #}
                                 {% else %}
                                     Napisz komentarz
                                 {% endif %}
                             </span>
                         </a>
+
                         <!-- Przycisk do udostępniania w mediach społecznościowych -->
                         <div class="relative" id="share-dropdown-container-{{ article.id }}">
                             <button type="button"
@@ -140,10 +152,11 @@
                                 id="share-dropdown-btn-{{ article.id }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline" fill="none" viewBox="0 0 24 24" stroke="#2563eb">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M17.5 6.5a2.5 2.5 0 1 0-2.45-2.01l-6.1 3.05a2.5 2.5 0 1 0 0 3.92l6.1 3.05a2.5 2.5 0 1 0 .7-1.45l-6.1-3.05a2.5 2.5 0 0 0 0-1.02l6.1-3.05A2.5 2.5 0 0 0 17.5 6.5z"/>
+                                          d="M17.5 6.5a2.5 2.5 0 1 0-2.45-2.01l-6.1 3.05a2.5 2.5 0 1 0 0 3.92l6.1 3.05a2.5 2.5 0 1 0 .7-1.45l-6.1-3.05a2.5 2.5 0 0 0 0-1.02l6.1-3.05A2.5 2.5 0 0 0 17.5 6.5z"></path>
                                 </svg>
                                 <span>Podziel się</span>
                             </button>
+
                             <!-- Opcje serwisów do udostępniania - https://github.com/fcurella/django-social-share?tab=readme-ov-file -->
                             <div class="hidden absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg z-10"
                                  id="share-dropdown-{{ article.id }}">
@@ -180,6 +193,7 @@
                 </div>
             </div>
         {% endfor %}
+
         <!-- Paginacja -->
         <div class="mt-8 flex justify-between items-center">
             {% if page_obj.has_previous %}
