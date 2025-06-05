@@ -88,6 +88,8 @@
                         </svg>
                         Pobierz
                     </a>
+
+                {% if user.is_authenticated %}
                     <!-- Przycisk Follow/Unfollow -->
                     <button type="button"
                             class="follow-toggle text-blue-600 hover:underline flex items-center gap-1"
@@ -113,6 +115,16 @@
                             <span class="follow-label">Obserwuj</span>
                         {% endif %}
                     </button>
+                {% else %}
+                    <!-- Dla niezalogowanego użytkownika: link do logowania -->
+                    <a href="{% url 'login' %}?next={{ request.path }}"
+                       class="text-blue-600 hover:underline flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="#FFD700" stroke-width="1.5" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9a6 6 0 00-12 0v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"></path>
+                        </svg>
+                        <span class="follow-label">Obserwuj</span>
+                    </a>
+                {% endif %}
                 </div>
 
                 <!-- Prawa część: Polub to -->
@@ -137,6 +149,8 @@
                         {% endif %}
                     </span>
 
+
+                {% if user.is_authenticated %}
                     <!-- Przycisk like/unlike -->
                     <button
                             type="button"
@@ -152,6 +166,17 @@
                         {% if article.liked_by_user %}Lubisz to{% else %}Polub to{% endif %}
                         </span>
                     </button>
+                {% else %}
+                    <a href="{% url 'login' %}?next={{ request.path }}"
+                       class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                             stroke="currentColor" class="size-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904"></path>
+                        </svg>
+                        <span class="like-label text-sm">Polub to</span>
+                    </a>
+                {% endif %}
 
                     <!-- Przycisk do udostępniania w mediach społecznościowych -->
                     <div class="relative" id="share-dropdown-container-{{ article.id }}">
