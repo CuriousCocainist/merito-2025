@@ -1,6 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django.shortcuts import render, redirect  # Funkcja do renderowania stron i przekierowań
 from django.contrib.auth.decorators import login_required  # Dekorator, który wymaga logowania użytkownika
 from django.contrib.auth import update_session_auth_hash  # Funkcja, która odświeża sesję po zmianie hasła
@@ -26,15 +23,20 @@ def change_password(request):
             update_session_auth_hash(request, user)
 
             # Wyświetlamy komunikat o sukcesie
-            messages.success(request, 'Twoje hasło zostało pomyślnie zmienione!')
+            messages.success(request, 'Twoje hasło zostało zmienione.') # Treść komunikatu dla pop-upu
 
-            # Przekierowujemy na stronę profilu lub inną (np. homepage)
-            return redirect('profile')  # Upewnij się, że masz taką nazwę URL w pliku urls.py
+            # Przekierowujemy na stronę główną
+            return redirect('home') # Zmieniono przekierowanie na 'home'
     else:
         # Jeśli to jest pierwszy dostęp (GET), pokazujemy pusty formularz
         form = PasswordChangeForm(request.user)
     # Renderujemy szablon, do którego przekazujemy formularz
     return render(request, 'change_password.html', {'form': form})
+
+
+# Funkcja password_change_done_view NIE JEST JUŻ POTRZEBNA, ponieważ przekierowujemy na stronę główną.
+# Zostawiam ją tu na wypadek, gdyby była gdzieś indziej używana, ale docelowo można ją usunąć,
+# jeśli nigdzie indziej nie jest wywoływana.
 
 
 def get_suggested_users(request):
@@ -64,11 +66,11 @@ def get_suggested_users(request):
             else:
                 excluded_ids.add(friendship.user.id)
 
-        for request in pending_requests:
-            if request.user == request.user:
-                excluded_ids.add(request.friend.id)
+        for req in pending_requests: # Zmieniono nazwę zmiennej 'request' na 'req', aby uniknąć konfliktu z 'request' z widoku
+            if req.user == request.user: # Użycie 'req.user'
+                excluded_ids.add(req.friend.id)
             else:
-                excluded_ids.add(request.user.id)
+                excluded_ids.add(req.user.id)
 
         # Wyklucz już dodanych znajomych i oczekujące zaproszenia
         # Sortuj po dacie dołączenia (od najnowszych) i ogranicz do 5 wyników
