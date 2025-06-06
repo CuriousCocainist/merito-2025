@@ -1,4 +1,3 @@
-from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, get_user_model # Dodano import get_user_model
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
@@ -25,6 +24,11 @@ from django.contrib import messages
 from django.http import JsonResponse
 
 from app_scinet.utils import get_or_create_conversation
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator # Potrzebne dla walidacji tokenu
+from django.utils.encoding import force_str # Potrzebne do dekodowania uidb64
+from django.utils.http import urlsafe_base64_decode # Potrzebne do dekodowania uidb64
 
 User = get_user_model() # Pobranie modelu User
 
@@ -744,13 +748,16 @@ def password_reset_request_view(request): #  Definiujemy widok obsługujący ż�
                 try:
                     user = User.objects.get(email=email) # Pobierz użytkownika po emailu
                     token = get_random_string(length=32) # Generuj losowy token
+                    # Kodowanie UID użytkownika - DODANA LINIA
+                    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
                     profile = UserProfile.objects.get(user=user) # Pobierz profil użytkownika
                     profile.reset_token = token # Zapisz token w profilu
                     profile.save() # Zapisz zmiany w profilu
 
                     # Wygeneruj link do resetu hasła
                     current_site = get_current_site(request) # Pobierz aktualną domenę
-                    reset_url = reverse('password_reset_confirm', kwargs={'token': token}) # Wygeneruj URL do widoku resetu
+                    # WAŻNA ZMIANA: Dodanie uidb64 do kwargs
+                    reset_url = reverse('password_reset_confirm', kwargs={'uidb64': uidb64, 'token': token}) # Wygeneruj URL do widoku resetu
                     abs_reset_url = f'http://{current_site.domain}{reset_url}' # Skonstruuj pełny URL
 
                     # Wyślij email z linkiem do resetu
@@ -760,7 +767,11 @@ def password_reset_request_view(request): #  Definiujemy widok obsługujący ż�
                     recipient_list = [email] # Lista odbiorców
                     send_mail(subject, message, from_email, recipient_list) # Wyślij email
 
-                    return render(request, 'password_reset_done.html', {'email': email}) # Renderuj stronę z potwierdzeniem
+                    # ZMIANA DLA POP-UPU: Dodajemy komunikat sukcesu i renderujemy TEN SAM szablon
+                    messages.success(request, "Link do zresetowania hasła został wysłany na Twój adres mailowy.")
+                    return render(request, 'password_reset_request.html', {'form': form})
+                    # KONIEC ZMIAN DLA POP-UPU
+
                 except User.DoesNotExist: # Obsługa przypadku, gdy użytkownik nie istnieje
                     form.add_error('email', 'Nie znaleziono użytkownika z tym adresem e-mail.') # Dodaj błąd do formularza
                 except UserProfile.DoesNotExist: # Obsługa przypadku, gdy profil użytkownika nie istnieje
@@ -782,16 +793,27 @@ class SetNewPasswordForm(forms.Form): # Formularz do ustawiania nowego hasła
         confirm_password = cleaned_data.get('confirm_password') # Pobierz potwierdzenie hasła
 
         if password and confirm_password and password != confirm_password: # Sprawdź, czy hasła się zgadzają
-            raise forms.ValidationError("Hasła nie pasują do siebie.") # Jeśli nie, wyrzuć błąd
-
+            self.add_error('confirm_password', 'Hasła nie pasują do siebie.') # Zmieniono raise na add_error dla lepszej obsługi formularza
         return cleaned_data # Zwróć oczyszczone dane
 
-def password_reset_confirm_view(request, token): # Widok do resetowania hasła po otrzymaniu tokenu
+def password_reset_confirm_view(request, uidb64, token): # ZMIENIONO: Dodano uidb64 jako argument
     try:
+        # Pamiętaj, że używasz niestandardowego tokenu z UserProfile.
+        # W tym widoku będziemy używać go do weryfikacji.
         profile = UserProfile.objects.get(reset_token=token) # Pobierz profil użytkownika po tokenie
         user = profile.user # Pobierz użytkownika z profilu
-    except UserProfile.DoesNotExist: # Jeśli token jest nieprawidłowy
-        return render(request, 'password_reset_failed.html') # Pokaż stronę z błędem
+
+        # Dodatkowa walidacja standardowym generatorem tokenów Django (opcjonalnie, ale dobra praktyka)
+        # Jeśli polegasz tylko na 'reset_token' z UserProfile, to możesz pominąć tę linię,
+        # ale przyjęcie 'uidb64' w URL sugeruje, że to też powinno być sprawdzane.
+        # Sprawdź, czy token Django jest również prawidłowy, używając uidb64
+        uid_decoded = force_str(urlsafe_base64_decode(uidb64))
+        if str(user.pk) != uid_decoded or not default_token_generator.check_token(user, token):
+             raise UserProfile.DoesNotExist # Wyrzuć ten sam błąd, jeśli uidb64 lub token Django nie pasują
+
+    except UserProfile.DoesNotExist: # Jeśli token z profilu lub uidb64/token Django jest nieprawidłowy
+        messages.error(request, 'Link do resetowania hasła jest nieprawidłowy lub wygasł.')
+        return render(request, 'password_reset_invalid.html') # Pokaż stronę z błędem
 
     if request.method == 'POST': # Jeśli formularz został wysłany
         form = SetNewPasswordForm(request.POST) # Utwórz formularz
@@ -801,13 +823,18 @@ def password_reset_confirm_view(request, token): # Widok do resetowania hasła p
             user.save() # Zapisz zmiany
             profile.reset_token = None # Wyczyść token
             profile.save() # Zapisz zmiany w profilu
+            messages.success(request, "Twoje hasło zostało zresetowane.")
             return redirect('password_reset_complete') # Przekieruj na stronę z potwierdzeniem
     else: # Jeśli metoda to GET
         form = SetNewPasswordForm() # Utwórz pusty formularz
 
-    return render(request, 'password_reset_confirm.html', {'form': form, 'token': token}) # Pokaż formularz resetowania hasła
+    return render(request, 'password_reset_confirm.html', {'form': form, 'uidb64': uidb64, 'token': token}) # Pokaż formularz resetowania hasła
+
 
 def password_reset_complete_view(request):
+    """
+    Widok wyświetlający stronę potwierdzającą pomyślne zresetowanie hasła.
+    """
     return render(request, 'password_reset_complete.html')
 
 
@@ -872,6 +899,5 @@ def conversation_list_view(request):
     return render(request, 'chat/conversation_list.html', {
         'friend_conversations': convo_data
     })
-
 
 

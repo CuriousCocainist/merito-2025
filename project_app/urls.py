@@ -15,7 +15,7 @@ from app_scinet.views.front_pages_view import (
     follow_article, unfollow_article, followed_articles,
     cancel_friend_request, # Dodano cancel_friend_request, jeśli jest używane
     conversation_view, conversation_list_view,
-    password_reset_request_view, password_reset_complete_view
+    password_reset_request_view, password_reset_complete_view, password_reset_confirm_view
 )
 
 # Import widoków zmiany hasła
@@ -50,9 +50,7 @@ urlpatterns = [
 
     # --- URL-e do Resetowania Hasła (dla niezalogowanych użytkowników) ---
     path('password-reset/', password_reset_request_view, name='password_reset_request'),
-    path('password-reset/<uidb64>/<token>/',
-         auth_views.PasswordResetConfirmView.as_view(template_name='password_reset_confirm.html'),
-         name='password_reset_confirm'),
+    path('password-reset/<str:uidb64>/<str:token>/', password_reset_confirm_view, name='password_reset_confirm'),
     path('password-reset-complete/', password_reset_complete_view, name='password_reset_complete'),
 
 
@@ -72,7 +70,7 @@ urlpatterns = [
     path('friends/', friends_list, name='friends_list'), # Wyświetlenie listy znajomych
 
     # --- URL-e Modułu Wiadomości ---
-    path('conversations/', conversation_list_view, name='conversations'), # Wyświetlenie listy rozmów
+    path('conversations/', conversation_list_view, name='conversation'), # Wyświetlenie listy rozmów
     path('conversation/<int:user_id>/', conversation_view, name='conversation'), # Widok pojedynczej rozmowy
 ]
 
