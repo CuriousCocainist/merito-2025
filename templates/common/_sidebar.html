@@ -30,7 +30,7 @@
 {% endif %}
 
 {# Wykluczamy wyświetlanie sekcji proponowanych znajomych na podstronach znajomych, profilu, własnych artykułów i konwersacji#}
-{% if request.resolver_match.url_name != 'friends_list' and request.resolver_match.url_name != 'my_articles' and request.resolver_match.url_name != 'profile_detail' and request.resolver_match.url_name != 'conversation' and request.resolver_match.url_name != 'conversations'%}
+{% if request.resolver_match.url_name != 'friends_list' and request.resolver_match.url_name != 'my_articles' and request.resolver_match.url_name != 'profile_detail' and request.resolver_match.url_name != 'conversation' and request.resolver_match.url_name != 'conversations' and request.resolver_match.url_name != 'add_article'%}
     <div class="bg-white p-4 rounded-md shadow mt-4">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Proponowani znajomi</h3>
         {% if user.is_authenticated %}
