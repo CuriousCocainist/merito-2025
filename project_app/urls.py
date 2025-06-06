@@ -70,9 +70,9 @@ urlpatterns = [
     path('friends/', friends_list, name='friends_list'), # Wyświetlenie listy znajomych
 
     # --- URL-e Modułu Wiadomości ---
-    path('conversations/', conversation_list_view, name='conversation'), # Wyświetlenie listy rozmów
+    path('conversations/', conversation_list_view, name='conversation_list'), # Wyświetlenie listy rozmów
     path('conversation/<int:user_id>/', conversation_view, name='conversation'), # Widok pojedynczej rozmowy
-    path('conversations/', conversation_list_view, name='conversation_list'),
+
 
 ]
 
