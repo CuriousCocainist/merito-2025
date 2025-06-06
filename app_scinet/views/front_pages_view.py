@@ -747,12 +747,10 @@ def password_reset_request_view(request): #  Definiujemy widok obsługujący ż�
             if captcha_answer == '5': # Sprawdzamy, czy odpowiedź na pytanie jest poprawna
                 try:
                     user = User.objects.get(email=email) # Pobierz użytkownika po emailu
-                    token = get_random_string(length=32) # Generuj losowy token
+                    token = default_token_generator.make_token(user) # Generuj token
                     # Kodowanie UID użytkownika - DODANA LINIA
                     uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                    profile = UserProfile.objects.get(user=user) # Pobierz profil użytkownika
-                    profile.reset_token = token # Zapisz token w profilu
-                    profile.save() # Zapisz zmiany w profilu
+
 
                     # Wygeneruj link do resetu hasła
                     current_site = get_current_site(request) # Pobierz aktualną domenę
@@ -796,39 +794,57 @@ class SetNewPasswordForm(forms.Form): # Formularz do ustawiania nowego hasła
             self.add_error('confirm_password', 'Hasła nie pasują do siebie.') # Zmieniono raise na add_error dla lepszej obsługi formularza
         return cleaned_data # Zwróć oczyszczone dane
 
-def password_reset_confirm_view(request, uidb64, token): # ZMIENIONO: Dodano uidb64 jako argument
+
+class SetNewPasswordForm(forms.Form):  # Formularz do ustawiania nowego hasła
+    password = forms.CharField(label='Nowe hasło', widget=forms.PasswordInput)  # Pole na nowe hasło
+    confirm_password = forms.CharField(label='Potwierdź nowe hasło',
+                                       widget=forms.PasswordInput)  # Pole do potwierdzenia nowego hasła
+
+    def clean(self):  # Metoda do walidacji formularza
+        cleaned_data = super().clean()  # Wywołaj metodę clean klasy nadrzędnej
+        password = cleaned_data.get('password')  # Pobierz hasło
+        confirm_password = cleaned_data.get('confirm_password')  # Pobierz potwierdzenie hasła
+
+        if password and confirm_password and password != confirm_password:  # Sprawdź, czy hasła się zgadzają
+            self.add_error('confirm_password',
+                           'Hasła nie pasują do siebie.')  # Zmieniono raise na add_error dla lepszej obsługi formularza
+        return cleaned_data  # Zwróć oczyszczone dane
+
+
+def password_reset_confirm_view(request, uidb64, token):  # ZMIENIONO: Dodano uidb64 jako argument
     try:
-        # Pamiętaj, że używasz niestandardowego tokenu z UserProfile.
-        # W tym widoku będziemy używać go do weryfikacji.
-        profile = UserProfile.objects.get(reset_token=token) # Pobierz profil użytkownika po tokenie
-        user = profile.user # Pobierz użytkownika z profilu
+        # Rozkoduj uidb64, aby uzyskać ID użytkownika
+        # Importy do force_str, default_token_generator i urlsafe_base64_decode są już na górze pliku.
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None  # Ustawiamy user na None, jeśli cokolwiek pójdzie nie tak przy dekodowaniu uidb64 lub pobieraniu użytkownika
 
-        # Dodatkowa walidacja standardowym generatorem tokenów Django (opcjonalnie, ale dobra praktyka)
-        # Jeśli polegasz tylko na 'reset_token' z UserProfile, to możesz pominąć tę linię,
-        # ale przyjęcie 'uidb64' w URL sugeruje, że to też powinno być sprawdzane.
-        # Sprawdź, czy token Django jest również prawidłowy, używając uidb64
-        uid_decoded = force_str(urlsafe_base64_decode(uidb64))
-        if str(user.pk) != uid_decoded or not default_token_generator.check_token(user, token):
-             raise UserProfile.DoesNotExist # Wyrzuć ten sam błąd, jeśli uidb64 lub token Django nie pasują
+    # Sprawdzamy, czy użytkownik istnieje I czy token jest prawidłowy
+    if user is not None and default_token_generator.check_token(user, token):
+        # Token i uid są poprawne
+        if request.method == 'POST':  # Jeśli formularz został wysłany
+            form = SetNewPasswordForm(request.POST)  # Utwórz formularz
+            if form.is_valid():  # Jeśli formularz jest poprawny
+                password = form.cleaned_data['password']  # Pobierz nowe hasło
+                user.set_password(password)  # Ustaw nowe hasło dla użytkownika
+                user.save()  # Zapisz zmiany
 
-    except UserProfile.DoesNotExist: # Jeśli token z profilu lub uidb64/token Django jest nieprawidłowy
+                # USUNIĘTO: Linie dotyczące profil.reset_token i profil.save()
+                # Ponieważ default_token_generator nie zapisuje tokenu w UserProfile,
+                # nie ma potrzeby jego czyszczenia.
+
+                messages.success(request, "Twoje hasło zostało zresetowane.")
+                return redirect('password_reset_complete')  # Przekieruj na stronę z potwierdzeniem
+        else:  # Jeśli metoda to GET
+            form = SetNewPasswordForm()  # Utwórz pusty formularz
+
+        # Renderujemy formularz ustawiania hasła, przekazując uidb64 i token do szablonu
+        return render(request, 'password_reset_confirm.html', {'form': form, 'uidb64': uidb64, 'token': token})
+    else:
+        # Token lub uid są nieprawidłowe
         messages.error(request, 'Link do resetowania hasła jest nieprawidłowy lub wygasł.')
-        return render(request, 'password_reset_invalid.html') # Pokaż stronę z błędem
-
-    if request.method == 'POST': # Jeśli formularz został wysłany
-        form = SetNewPasswordForm(request.POST) # Utwórz formularz
-        if form.is_valid(): # Jeśli formularz jest poprawny
-            password = form.cleaned_data['password'] # Pobierz nowe hasło
-            user.set_password(password) # Ustaw nowe hasło dla użytkownika
-            user.save() # Zapisz zmiany
-            profile.reset_token = None # Wyczyść token
-            profile.save() # Zapisz zmiany w profilu
-            messages.success(request, "Twoje hasło zostało zresetowane.")
-            return redirect('password_reset_complete') # Przekieruj na stronę z potwierdzeniem
-    else: # Jeśli metoda to GET
-        form = SetNewPasswordForm() # Utwórz pusty formularz
-
-    return render(request, 'password_reset_confirm.html', {'form': form, 'uidb64': uidb64, 'token': token}) # Pokaż formularz resetowania hasła
+        return render(request, 'password_reset_invalid.html')  # Pokaż stronę z błędem
 
 
 def password_reset_complete_view(request):
