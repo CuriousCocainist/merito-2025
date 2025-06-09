@@ -1,3 +1,4 @@
+import random
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from app_scinet.models import Article
@@ -10,64 +11,144 @@ class Command(BaseCommand):
         Article.objects.all().delete()
         self.stdout.write(self.style.WARNING("Wyczyszczono tabelę Article."))
 
-        user = User.objects.first()
-        if not user:
-            self.stdout.write(self.style.ERROR("Nie znaleziono użytkownika."))
+        users = list(User.objects.all())
+        if not users:
+            self.stdout.write(self.style.ERROR("Brak użytkowników w bazie danych."))
             return
+
         articles = [
             {
-                "title": "Tytuł artykułu 1",
-                "content": "Przykładowy artykuł o sztucznej inteligencji i jej zastosowaniach w różnych dziedzinach..."
-                           "Przykładowy artykuł o sztucznej inteligencji i jej zastosowaniach w różnych dziedzinach..."
-                           "Przykładowy artykuł o sztucznej inteligencji i jej zastosowaniach w różnych dziedzinach..."
-                           "Przykładowy artykuł o sztucznej inteligencji i jej zastosowaniach w różnych dziedzinach...",
-                "user": user
+                "title": "Wprowadzenie do języka Python dla początkujących",
+                "content": "Python to wszechstronny język programowania znany z czytelnej składni. "
+                           "Ten artykuł omawia podstawowe elementy: zmienne, typy danych, operatory i instrukcje warunkowe."
             },
             {
-                "title": "Tytuł artykułu 2",
-                "content": "Jakiś tekst o nauce i technologii, który może być interesujący dla czytelników..."
-                           "Jakiś tekst o nauce i technologii, który może być interesujący dla czytelników..."
-                           "Jakiś tekst o nauce i technologii, który może być interesujący dla czytelników...",
-                "user": user
-
-            },
+                "title": "Pętle i funkcje w Pythonie – jak pisać czytelny kod",
+                "content": "Dowiedz się, jak używać pętli `for`, `while`, oraz jak definiować i wywoływać funkcje. "
+                           "Zrozumiesz także pojęcie zakresu zmiennych i przekazywania argumentów."},
             {
-                "title": "Tytuł artykułu 3",
-                "content": "Nie mam pomysłu na treść, ale to jest przykładowy artykuł o czymś ważnym... i może być ciekawy. i jeszcze coś..."
-                           "Nie mam pomysłu na treść, ale to jest przykładowy artykuł o czymś ważnym... i może być ciekawy. i jeszcze coś..."
-                           "Nie mam pomysłu na treść, ale to jest przykładowy artykuł o czymś ważnym... i może być ciekawy. i jeszcze coś..."
-                           "Nie mam pomysłu na treść, ale to jest przykładowy artykuł o czymś ważnym... i może być ciekawy. i jeszcze coś...",
-                "user": user
-            },
+                "title": "Struktury danych w Pythonie – listy, słowniki i zbiory",
+                "content": "Artykuł omawia kluczowe struktury danych: jak je tworzyć, modyfikować oraz stosować w praktycznych przypadkach, takich jak filtrowanie danych."},
             {
-                "title": "Jimi Hendrix - art no. 4",
-                "content": "James Marshall \"Jimi\" Hendrix (born Johnny Allen Hendrix; November 27, 1942 – September 18, 1970) was an American guitarist, songwriter and singer"
-                           "He is widely regarded as one of the greatest and most influential guitarists of all time."
-                           "Inducted into the Rock and Roll Hall of Fame in 1992 as a part of his band, the Jimi Hendrix Experience, the institution describes him as \"arguably the greatest instrumentalist in the history of rock music.\"",
-                "user": user
-            },
+                "title": "Obsługa błędów w Pythonie – try, except, finally",
+                "content": "W tym artykule uczysz się, jak radzić sobie z wyjątkami w Pythonie. Pokazujemy najlepsze praktyki stosowania `try`, `except`, `else` i `finally`."},
             {
-                "title": "Bruce Lee - art no. 5",
-                "content": "Bruce Lee (born Lee Jun-fan; November 27, 1940 – July 20, 1973) was a Hong Kong-American martial artist, actor, filmmaker, and philosopher."
-                           "He was the founder of Jeet Kune Do, a hybrid martial arts philosophy which was formed from Lee's experiences in unarmed fighting and self-defense—as well as eclectic, Zen Buddhist and Taoist philosophies—as a new school of martial arts thought"
-                           "With a film career spanning Hong Kong and the United States, Lee is regarded as the first global Chinese film star and one of the most influential martial artists in the history of cinema."
-                           "Known for his roles in five feature-length martial arts films, Lee is credited with helping to popularize martial arts films in the 1970s and promoting Hong Kong action cinema.",
-                "user": user
-            },
+                "title": "Praca z plikami w Pythonie – wczytywanie i zapisywanie danych",
+                "content": "Dowiesz się, jak otwierać pliki tekstowe, czytać dane linia po linii oraz zapisywać wyniki do nowych plików przy użyciu `with open()`."},
             {
-                "title": "Koziołek Matołek - art no. 6",
-                "content": "Koziołek Matołek is a beloved literary character created by Kornel Makuszyński, a Polish writer"
-                           "Matołek is known for his adventurous spirit and clever solutions to problems he encounters on his travels. "
-                           "Koziołek Matołek has been charming readers of all ages for generations :) ",
-                "user": user
-            }
+                "title": "Moduły i pakiety w Pythonie – jak organizować projekt",
+                "content": "Artykuł wyjaśnia, jak importować moduły standardowe i własne, oraz jak tworzyć własne pakiety w celu lepszej organizacji kodu."},
+            {
+                "title": "Zrozumienie list comprehensions w Pythonie",
+                "content": "List comprehensions pozwalają tworzyć listy w jednej linijce kodu. Artykuł zawiera praktyczne przykłady oraz porównania z klasycznymi pętlami."},
+            {
+                "title": "Wprowadzenie do programowania obiektowego w Pythonie",
+                "content": "Dowiesz się, czym są klasy, obiekty, dziedziczenie i enkapsulacja. Poznasz praktyczne przykłady projektowania klas."},
+            {
+                "title": "Instalacja i użycie bibliotek z pip – podstawy pracy z zależnościami",
+                "content": "Opisujemy jak zainstalować biblioteki takie jak `requests`, `numpy`, czy `matplotlib`, oraz jak zarządzać środowiskami przy użyciu `venv`."},
+            {
+                "title": "Testowanie kodu w Pythonie z unittest i pytest",
+                "content": "Testy jednostkowe pozwalają wykrywać błędy wcześniej. Artykuł pokazuje, jak pisać testy w `unittest` oraz `pytest`, z przykładami."},
+            {
+                "title": "Czym jest sztuczna inteligencja – podstawowe pojęcia",
+                "content": "AI to dziedzina informatyki zajmująca się tworzeniem systemów naśladujących ludzką inteligencję. Poznasz różnicę między AI, ML i deep learningiem."},
+            {
+                "title": "Uczenie maszynowe w praktyce – typy i zastosowania",
+                "content": "Omawiamy uczenie nadzorowane i nienadzorowane, regresję, klasyfikację oraz realne zastosowania AI w biznesie, medycynie i finansach."},
+            {
+                "title": "Biblioteka scikit-learn – pierwsze modele ML w Pythonie",
+                "content": "Zobacz, jak zbudować swój pierwszy model klasyfikacyjny przy użyciu scikit-learn: od przygotowania danych po ocenę jakości modelu."},
+            {
+                "title": "Sztuczne sieci neuronowe – jak działa perceptron",
+                "content": "W artykule omawiamy budowę i działanie perceptronu – podstawowego elementu sieci neuronowych. Pojawia się także prosty kod implementacyjny."},
+            {
+                "title": "TensorFlow – jak zbudować prostą sieć neuronową",
+                "content": "Dowiesz się, jak stworzyć prosty model sieci neuronowej w TensorFlow – od definicji warstw po trening i ewaluację."},
+            {
+                "title": "Uczenie głębokie z Keras – klasyfikacja obrazów",
+                "content": "W artykule używamy Keras do stworzenia klasyfikatora obrazów. Omówione są konwolucyjne sieci neuronowe i preprocessing danych."},
+            {
+                "title": "Naturalne przetwarzanie języka – NLP z biblioteką spaCy",
+                "content": "Przetwarzanie języka naturalnego pozwala analizować tekst, rozpoznawać encje i klasyfikować sentyment. Przykłady kodu z wykorzystaniem spaCy."},
+            {
+                "title": "Wstęp do chatbotów opartych na AI",
+                "content": "Dowiedz się, jak działają chatboty, jak trenować je na bazie dialogów i używać narzędzi typu Rasa lub Dialogflow."},
+            {
+                "title": "Wykrywanie obiektów na obrazach – YOLO i inne algorytmy",
+                "content": "Poznasz zasady działania algorytmów do wykrywania obiektów takich jak YOLO czy SSD oraz jak je zaimplementować z użyciem Python."},
+            {
+                "title": "AI w życiu codziennym – inteligentne systemy rekomendacyjne",
+                "content": "Wyjaśniamy, jak działają rekomendacje na platformach takich jak Netflix czy Spotify i jak samodzielnie stworzyć prosty system rekomendacji."},
+            {
+                "title": "Wprowadzenie do języka Python dla początkujących",
+                "content": "Python to wszechstronny język programowania znany z czytelnej składni. "
+                           "Ten artykuł omawia podstawowe elementy: zmienne, typy danych, operatory i instrukcje warunkowe."},
+            {
+                "title": "Pętle i funkcje w Pythonie – jak pisać czytelny kod",
+                "content": "Dowiedz się, jak używać pętli `for`, `while`, oraz jak definiować i wywoływać funkcje. "
+                           "Zrozumiesz także pojęcie zakresu zmiennych i przekazywania argumentów."},
+            {
+                "title": "Struktury danych w Pythonie – listy, słowniki i zbiory",
+                "content": "Artykuł omawia kluczowe struktury danych: jak je tworzyć, modyfikować oraz stosować w praktycznych przypadkach, takich jak filtrowanie danych."},
+            {
+                "title": "Obsługa błędów w Pythonie – try, except, finally",
+                "content": "W tym artykule uczysz się, jak radzić sobie z wyjątkami w Pythonie. Pokazujemy najlepsze praktyki stosowania `try`, `except`, `else` i `finally`."},
+            {
+                "title": "Praca z plikami w Pythonie – wczytywanie i zapisywanie danych",
+                "content": "Dowiesz się, jak otwierać pliki tekstowe, czytać dane linia po linii oraz zapisywać wyniki do nowych plików przy użyciu `with open()`."},
+            {
+                "title": "Moduły i pakiety w Pythonie – jak organizować projekt",
+                "content": "Artykuł wyjaśnia, jak importować moduły standardowe i własne, oraz jak tworzyć własne pakiety w celu lepszej organizacji kodu."},
+            {
+                "title": "Zrozumienie list comprehensions w Pythonie",
+                "content": "List comprehensions pozwalają tworzyć listy w jednej linijce kodu. Artykuł zawiera praktyczne przykłady oraz porównania z klasycznymi pętlami."},
+            {
+                "title": "Wprowadzenie do programowania obiektowego w Pythonie",
+                "content": "Dowiesz się, czym są klasy, obiekty, dziedziczenie i enkapsulacja. Poznasz praktyczne przykłady projektowania klas."},
+            {
+                "title": "Instalacja i użycie bibliotek z pip – podstawy pracy z zależnościami",
+                "content": "Opisujemy jak zainstalować biblioteki takie jak `requests`, `numpy`, czy `matplotlib`, oraz jak zarządzać środowiskami przy użyciu `venv`."},
+            {
+                "title": "Testowanie kodu w Pythonie z unittest i pytest",
+                "content": "Testy jednostkowe pozwalają wykrywać błędy wcześniej. Artykuł pokazuje, jak pisać testy w `unittest` oraz `pytest`, z przykładami."},
+            {
+                "title": "Czym jest sztuczna inteligencja – podstawowe pojęcia",
+                "content": "AI to dziedzina informatyki zajmująca się tworzeniem systemów naśladujących ludzką inteligencję. Poznasz różnicę między AI, ML i deep learningiem."},
+            {
+                "title": "Uczenie maszynowe w praktyce – typy i zastosowania",
+                "content": "Omawiamy uczenie nadzorowane i nienadzorowane, regresję, klasyfikację oraz realne zastosowania AI w biznesie, medycynie i finansach."},
+            {
+                "title": "Biblioteka scikit-learn – pierwsze modele ML w Pythonie",
+                "content": "Zobacz, jak zbudować swój pierwszy model klasyfikacyjny przy użyciu scikit-learn: od przygotowania danych po ocenę jakości modelu."},
+            {
+                "title": "Sztuczne sieci neuronowe – jak działa perceptron",
+                "content": "W artykule omawiamy budowę i działanie perceptronu – podstawowego elementu sieci neuronowych. Pojawia się także prosty kod implementacyjny."},
+            {
+                "title": "TensorFlow – jak zbudować prostą sieć neuronową",
+                "content": "Dowiesz się, jak stworzyć prosty model sieci neuronowej w TensorFlow – od definicji warstw po trening i ewaluację."},
+            {
+                "title": "Uczenie głębokie z Keras – klasyfikacja obrazów",
+                "content": "W artykule używamy Keras do stworzenia klasyfikatora obrazów. Omówione są konwolucyjne sieci neuronowe i preprocessing danych."},
+            {
+                "title": "Naturalne przetwarzanie języka – NLP z biblioteką spaCy",
+                "content": "Przetwarzanie języka naturalnego pozwala analizować tekst, rozpoznawać encje i klasyfikować sentyment. Przykłady kodu z wykorzystaniem spaCy."},
+            {
+                "title": "Wstęp do chatbotów opartych na AI",
+                "content": "Dowiedz się, jak działają chatboty, jak trenować je na bazie dialogów i używać narzędzi typu Rasa lub Dialogflow."},
+            {
+                "title": "Wykrywanie obiektów na obrazach – YOLO i inne algorytmy",
+                "content": "Poznasz zasady działania algorytmów do wykrywania obiektów takich jak YOLO czy SSD oraz jak je zaimplementować z użyciem Python."},
+            {
+                "title": "AI w życiu codziennym – inteligentne systemy rekomendacyjne",
+                "content": "Wyjaśniamy, jak działają rekomendacje na platformach takich jak Netflix czy Spotify i jak samodzielnie stworzyć prosty system rekomendacji."}
         ]
 
         for article in articles:
             Article.objects.create(
                 title=article["title"],
                 content=article["content"],
-                user=article["user"]
+                user = random.choice(users)
             )
 
         self.stdout.write(self.style.SUCCESS("Dodano przykładowe artykuły"))
